@@ -3,24 +3,30 @@ package middleware
 import (
 	"net/http"
 	"news/internal/jwt"
-	"strings"
+	"time"
 
 	"github.com/labstack/echo/v4"
 )
 
 func JWTAuth(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		authHeader := c.Request().Header.Get("Authorizetion")
-		if authHeader == "" {
-			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Authtorization header required"})
+		cookie, err := c.Cookie("jwt")
+		if err != nil {
+			return c.Redirect(http.StatusSeeOther, "/login-page")
 		}
-		tokenstring := strings.TrimPrefix(authHeader, "Bearer ")
-		if tokenstring == authHeader {
-			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Authorization header required"})
+		tokenstring := cookie.Value
+		if tokenstring == "" {
+			return c.Redirect(http.StatusSeeOther, "/login-page")
 		}
 		claims, err := jwt.ValidateToken(tokenstring)
 		if err != nil {
-			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "invalid token"})
+			cookie := new(http.Cookie)
+			cookie.Name = "jwt"
+			cookie.Value = ""
+			cookie.Expires = time.Now().Add(24 * time.Hour)
+			cookie.Path = "/"
+			c.SetCookie(cookie)
+			return c.Redirect(http.StatusSeeOther, "/login-page")
 		}
 		c.Set("userID", claims.UserID)
 		c.Set("username", claims.Username)

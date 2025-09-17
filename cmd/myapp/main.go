@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"html/template"
 	"io"
-	"log"
+	"net/http"
 	"news/internal/database"
 	"news/internal/handler"
+	"news/internal/middleware"
 
 	echo "github.com/labstack/echo/v4"
+	echomiddleware "github.com/labstack/echo/v4/middleware"
 )
 
 type TemplateRegistry struct {
@@ -27,6 +29,30 @@ func main() {
 	e.Renderer = &TemplateRegistry{
 		templates: templates,
 	}
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			if c.Request().Method == "OPTIONS" {
+				return c.NoContent(http.StatusOK)
+			}
+			return next(c)
+		}
+	})
+	e.Use(echomiddleware.CORSWithConfig(echomiddleware.CORSConfig{
+		AllowOrigins:     []string{"http://localhost:3000", "http://127.0.0.1:3000"},
+		AllowMethods:     []string{http.MethodGet, http.MethodPut, http.MethodPost, http.MethodDelete, http.MethodOptions},
+		AllowCredentials: true,
+		AllowHeaders: []string{
+			echo.HeaderAuthorization,
+			echo.HeaderContentType,
+			echo.HeaderXRequestedWith,
+		},
+		ExposeHeaders: []string{
+			echo.HeaderAuthorization,
+			echo.HeaderContentLength,
+			"X-Total-Count",
+		},
+		MaxAge: 86400,
+	}))
 
 	e.GET("/", func(c echo.Context) error {
 		return c.File("web/templates/index.html")
@@ -37,14 +63,14 @@ func main() {
 	e.GET("/register-page", func(c echo.Context) error {
 		return c.File("web/templates/registerpage.html")
 	})
-	e.GET("/home-page", func(c echo.Context) error {
-		return c.File("web/templates/homepage.html")
-	})
 	e.POST("/login", handler.Login)
 	e.POST("/register", handler.Register)
-	err := e.Start("127.0.0.1:8080")
-	if err != nil {
-		log.Println(err)
-	}
+	protected := e.Group("")
+	protected.Use(middleware.JWTAuth)
+	protected.GET("/home", handler.HomePage)
+	protected.GET("/popular-news", handler.AllArticle)
+	protected.GET("/add-article-page", handler.AddArticlePage)
+	protected.POST("/add-article", handler.AddArticle)
+	e.Logger.Fatal(e.Start("127.0.0.1:8080"))
 
 }

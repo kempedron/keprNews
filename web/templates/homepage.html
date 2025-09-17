@@ -1,11 +1,206 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Главная страница</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #4361ee;
+            --secondary-color: #3a0ca3;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+            --border-radius: 12px;
+            --box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: var(--dark-color);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .logo {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 40px;
+            margin-bottom: 20px;
+        }
+
+        .welcome-text h1 {
+            font-size: 28px;
+            color: var(--dark-color);
+            margin-bottom: 10px;
+        }
+
+        .welcome-text p {
+            color: #6c757d;
+            font-size: 18px;
+        }
+
+        .main-action {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: 40px;
+            text-align: center;
+            transition: var(--transition);
+            margin-bottom: 30px;
+        }
+
+        .main-action:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        }
+
+        .main-action i {
+            font-size: 64px;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+
+        .main-action h2 {
+            font-size: 28px;
+            margin-bottom: 20px;
+            color: var(--dark-color);
+        }
+
+        .main-action p {
+            color: #6c757d;
+            margin-bottom: 30px;
+            font-size: 18px;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 15px 30px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 18px;
+        }
+
+        .btn:hover {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: #6c757d;
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .logo {
+                font-size: 28px;
+            }
+            
+            .avatar {
+                width: 80px;
+                height: 80px;
+                font-size: 32px;
+            }
+            
+            .welcome-text h1 {
+                font-size: 24px;
+            }
+            
+            .main-action {
+                padding: 20px;
+            }
+            
+            .main-action i {
+                font-size: 48px;
+            }
+            
+            .main-action h2 {
+                font-size: 24px;
+            }
+            
+            .btn {
+                padding: 12px 24px;
+                font-size: 16px;
+            }
+        }
+    </style>
 </head>
 <body>
-    домашняя страница пользователя {{.Username}}
+    <div class="container">
+        <header>
+            <div class="logo">Новостной портал</div>
+            <div class="user-info">
+                <div class="welcome-text">
+                    <h1>Добро пожаловать, {{.Username}}!</h1>
+                    <p>Рады видеть вас на нашем портале</p>
+                </div>
+            </div>
+        </header>
+
+        <div class="main-action">
+            <i class="fas fa-newspaper"></i>
+            <h2>Самые популярные новости</h2>
+            <p>Читайте самые обсуждаемые и популярные новости этой недели</p>
+            <a href="/popular-news" class="btn">Перейти к новостям</a>
+        </div>
+
+        <footer>
+            <p>© 2023 Новостной портал. Все права защищены.</p>
+        </footer>
+    </div>
 </body>
 </html>
