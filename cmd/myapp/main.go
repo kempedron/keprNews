@@ -71,6 +71,7 @@ func main() {
 	protected.GET("/popular-news", handler.AllArticle)
 	protected.GET("/add-article-page", handler.AddArticlePage)
 	protected.POST("/add-article", handler.AddArticle)
+	protected.GET("/article/:article_id", handler.GetArticle)
 	e.Logger.Fatal(e.Start("127.0.0.1:8080"))
 
 }

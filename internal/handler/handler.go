@@ -1,11 +1,14 @@
 package handler
 
 import (
+	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"news/internal/database"
 	"news/internal/jwt"
 	"news/internal/models"
+	"strconv"
 	"strings"
 	"time"
 
@@ -225,4 +228,30 @@ func HomePage(c echo.Context) error {
 	}
 	return c.Render(http.StatusOK, "homepage.html", user)
 
+}
+func GetArticle(c echo.Context) error {
+	articleID := c.Param("article_id")
+	articleIDUint, err := strconv.ParseUint(articleID, 10, 32)
+	if err != nil {
+		log.Printf("error parse articleId -> uint: %s", err)
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Неверный формат ID статьи"})
+	}
+	article, err := GetArticleByID(database.DB, articleIDUint)
+	if err != nil {
+		log.Printf("error in getting article by ID: %s", err)
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ошибка на стороне сервера"})
+	}
+	return c.Render(http.StatusOK, "article.html", article)
+}
+
+func GetArticleByID(db *gorm.DB, articleID uint64) (models.Article, error) {
+	var article models.Article
+	err := db.Preload("Author").Preload("Tags").First(&article, articleID).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return models.Article{}, fmt.Errorf("статья с ID %d не найдена ", articleID)
+		}
+		return models.Article{}, fmt.Errorf("ошибка при получении статьи: %s", err)
+	}
+	return article, nil
 }
