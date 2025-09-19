@@ -212,8 +212,8 @@
                 
                 <!-- Мета-информация -->
                 <div class="article-meta">
-                    <span class="article-date">15 октября 2023</span>
-                    <span class="article-author">Автор: Анна Петрова</span>
+                    <span class="article-date">Опубликовано: {{.CreatedAt.Format "2006-01-02 15:04"}}</span>
+                    <span class="article-author">Автор: {{.Author.Username}}</span>
                 </div>
             </header>
 

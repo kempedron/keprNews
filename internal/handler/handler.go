@@ -233,7 +233,7 @@ func GetArticle(c echo.Context) error {
 	articleID := c.Param("article_id")
 	articleIDUint, err := strconv.ParseUint(articleID, 10, 32)
 	if err != nil {
-		log.Printf("error parse articleId -> uint: %s", err)
+		log.Printf("error parse articleID -> uint: %s", err)
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Неверный формат ID статьи"})
 	}
 	article, err := GetArticleByID(database.DB, articleIDUint)
@@ -254,4 +254,29 @@ func GetArticleByID(db *gorm.DB, articleID uint64) (models.Article, error) {
 		return models.Article{}, fmt.Errorf("ошибка при получении статьи: %s", err)
 	}
 	return article, nil
+}
+
+func DeleteArticle(c echo.Context) error {
+	articleID := c.Param("article_id")
+	//referer := c.Request().Referer()
+	articleUint, err := strconv.ParseUint(articleID, 10, 32)
+	if err != nil {
+		log.Printf("errror parse articleID -> uint: %s", err)
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Неверный формат ID статьи"})
+	}
+	err = DeleteArticleByID(database.DB, articleUint)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "ошибка при удалении статьи"})
+	}
+	return c.String(http.StatusOK, "статья удалена")
+	//return c.Redirect(http.StatusFound, referer)
+}
+
+func DeleteArticleByID(db *gorm.DB, articleID uint64) error {
+	err := db.Where("id = ?", articleID).Delete(&models.User{}).Error
+	if err != nil {
+		log.Printf("error delete article with id %d:%s", articleID, err)
+		return err
+	}
+	return nil
 }

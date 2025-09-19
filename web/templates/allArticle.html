@@ -324,6 +324,34 @@
             animation: fadeIn 0.5s ease-out;
         }
 
+        /* Delete button styles */
+        .delete-form {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            z-index: 10;
+        }
+
+        .btn-delete {
+            background-color: var(--danger);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn-delete:hover {
+            background-color: #c1121f;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
+        }
+
         /* Loading state (if needed in future) */
         .skeleton {
             background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
@@ -368,7 +396,12 @@
             {{if .}}
                 {{range .}}
                     <article class="article-card">
-                        <img src="https://picsum.photos/600/400?random={{.ID}}" alt="{{.ArticleTitle}}" class="article-image">
+                        <form class="delete-form" action="/article/delete/{{.ID}}" method="POST">
+                            <input type="hidden" name="_method" value="DELETE">
+                            <button type="submit" class="btn-delete" onclick="return confirm('Вы уверены, что хотите удалить эту статью?')">
+                                <i class="fas fa-trash"></i> Удалить
+                            </button>
+                        </form>
                         
                         <div class="article-content">
                             {{if .Tags}}

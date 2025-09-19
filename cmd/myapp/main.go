@@ -72,6 +72,7 @@ func main() {
 	protected.GET("/add-article-page", handler.AddArticlePage)
 	protected.POST("/add-article", handler.AddArticle)
 	protected.GET("/article/:article_id", handler.GetArticle)
+	protected.POST("/article/delete/:article_id", handler.DeleteArticle)
 	e.Logger.Fatal(e.Start("127.0.0.1:8080"))
 
 }
