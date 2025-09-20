@@ -273,7 +273,7 @@ func DeleteArticle(c echo.Context) error {
 }
 
 func DeleteArticleByID(db *gorm.DB, articleID uint64) error {
-	err := db.Where("id = ?", articleID).Delete(&models.User{}).Error
+	err := db.Where("id = ?", articleID).Delete(&models.Article{}).Error
 	if err != nil {
 		log.Printf("error delete article with id %d:%s", articleID, err)
 		return err
