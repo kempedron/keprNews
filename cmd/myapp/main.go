@@ -73,6 +73,10 @@ func main() {
 	protected.POST("/add-article", handler.AddArticle)
 	protected.GET("/article/:article_id", handler.GetArticle)
 	protected.POST("/article/delete/:article_id", handler.DeleteArticle)
+	protected.GET("/article/search", handler.SearchArticles)
+	protected.GET("/search", func(c echo.Context) error {
+		return c.File("web/templates/search.html")
+	})
 	e.Logger.Fatal(e.Start("127.0.0.1:8080"))
 
 }

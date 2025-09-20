@@ -25,4 +25,33 @@ func InitDB() {
 		&models.Tag{},
 		&models.Article{},
 	)
+	if err != nil {
+		log.Printf("error migrate DB: %s", err)
+		panic(err)
+	}
+	// Добавляем поле для полнотекстового поиска (если еще не существует)
+	err = DB.Exec(`
+        ALTER TABLE articles 
+        ADD COLUMN IF NOT EXISTS search_vector tsvector GENERATED ALWAYS AS (
+            setweight(to_tsvector('russian', coalesce(article_title, '')), 'A') ||
+            setweight(to_tsvector('russian', coalesce(article_content, '')), 'B')
+        ) STORED
+    `).Error
+	if err != nil {
+		log.Printf("Ошибка при добавлении search_vector: %v", err)
+		// Не прерываем выполнение, так как столбец может уже существовать
+	}
+
+	// Создаем индекс GIN для быстрого поиска (если еще не существует)
+	err = DB.Exec("CREATE INDEX IF NOT EXISTS idx_articles_search_vector ON articles USING gin(search_vector)").Error
+	if err != nil {
+		log.Printf("Ошибка при создании индекса для search_vector: %v", err)
+	}
+
+	// Создаем индекс для поиска по тегам (если еще не существует)
+	err = DB.Exec("CREATE INDEX IF NOT EXISTS idx_tags_content ON tags USING gin(to_tsvector('russian', tag_content))").Error
+	if err != nil {
+		log.Printf("Ошибка при создании индекса для тегов: %v", err)
+	}
+
 }

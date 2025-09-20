@@ -381,6 +381,9 @@
                     <a href="/add-article-page" class="nav-btn">
                         <i class="fas fa-plus"></i> Добавить статью
                     </a>
+                     <a href="/search" class="nav-btn">
+                        <i class="fas fa-search"></i> Поиск
+                    </a>
                 </div>
             </div>
         </div>
@@ -393,15 +396,17 @@
         </div>
 
         <div class="articles-grid">
-            {{if .}}
-                {{range .}}
+            {{if .articles}}
+                {{range .articles}}
                     <article class="article-card">
+                        {{if and $.currentUsername .Author (eq $.currentUsername .Author.Username)}}
                         <form class="delete-form" action="/article/delete/{{.ID}}" method="POST">
                             <input type="hidden" name="_method" value="DELETE">
                             <button type="submit" class="btn-delete" onclick="return confirm('Вы уверены, что хотите удалить эту статью?')">
                                 <i class="fas fa-trash"></i> Удалить
                             </button>
                         </form>
+                        {{end}}
                         
                         <div class="article-content">
                             {{if .Tags}}
@@ -435,7 +440,12 @@
                                     <i class="far fa-eye"></i> {{.NumViews}}
                                 </span>
                                 <span class="meta-item">
-                                    <i class="far fa-user"></i> {{.Author.Username}}
+                                    <i class="far fa-user"></i> 
+                                    {{if .Author}}
+                                        {{.Author.Username}}
+                                    {{else}}
+                                        Неизвестный автор
+                                    {{end}}
                                 </span>
                             </div>
                         </div>

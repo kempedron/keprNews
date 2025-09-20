@@ -204,7 +204,16 @@ func AllArticle(c echo.Context) error {
 		log.Printf("error get articles from DB: %s", err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "error in get articles from DB"})
 	}
-	return c.Render(http.StatusOK, "allArticle.html", articles)
+	userID := c.Get("userID") // Ваша функция для получения ID пользователя
+	var currentUser models.User
+	if userID != 0 {
+		database.DB.First(&currentUser, userID)
+	}
+	currentUsername := currentUser.Username
+	return c.Render(http.StatusOK, "allArticle.html", map[string]interface{}{
+		"articles":        articles,
+		"currentUsername": currentUsername,
+	})
 }
 
 func GetArticlesWithDetails(db *gorm.DB) ([]models.Article, error) {
@@ -264,6 +273,18 @@ func DeleteArticle(c echo.Context) error {
 		log.Printf("errror parse articleID -> uint: %s", err)
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Неверный формат ID статьи"})
 	}
+	userID, ok := c.Get("userID").(uint)
+	if !ok {
+		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Требуется авторизация"})
+	}
+	var article models.Article
+	result := database.DB.Preload("Author").First(&article, articleID)
+	if result.Error != nil {
+		return c.JSON(http.StatusNotFound, map[string]string{"error": "статья не найдена"})
+	}
+	if article.AuthorID != userID {
+		return c.JSON(http.StatusForbidden, map[string]string{"error": "у вас нет прав для удаления данной записи"})
+	}
 	err = DeleteArticleByID(database.DB, articleUint)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "ошибка при удалении статьи"})
@@ -279,4 +300,61 @@ func DeleteArticleByID(db *gorm.DB, articleID uint64) error {
 		return err
 	}
 	return nil
+}
+
+func SearchArticles(c echo.Context) error {
+	searchQuery := c.FormValue("search-query")
+	if searchQuery == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "Пустой поисковый запрос",
+		})
+	}
+
+	page, _ := strconv.Atoi(c.QueryParam("page"))
+	if page < 1 {
+		page = 1
+	}
+	limit := 20
+	offset := (page - 1) * limit
+
+	var articles []models.Article
+
+	// Безопасный поиск с использованием полнотекстовых возможностей PostgreSQL
+	query := database.DB.Preload("Author").Preload("Tags").
+		Where("articles.deleted_at IS NULL")
+
+	if searchQuery != "" {
+		// Используем phraseto_tsquery для поиска точной фразы
+		query = query.Where(`
+            search_vector @@ phraseto_tsquery('russian', ?) OR
+            articles.id IN (
+                SELECT at.article_id FROM article_tags at
+                JOIN tags t ON t.id = at.tag_id
+                WHERE to_tsvector('russian', t.tag_content) @@ phraseto_tsquery('russian', ?)
+            )
+        `, searchQuery, searchQuery).
+			Select("*, ts_rank(search_vector, phraseto_tsquery('russian', ?)) as rank", searchQuery).
+			Order("rank DESC, created_at DESC")
+	}
+
+	// Получаем результаты с пагинацией
+	result := query.Offset(offset).Limit(limit).Find(&articles)
+
+	if result.Error != nil {
+		log.Printf("Ошибка при поиске статей: %v", result.Error)
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "Ошибка при поиске статей",
+		})
+	}
+	userID := c.Get("userID") // Ваша функция для получения ID пользователя
+	var currentUser models.User
+	if userID != 0 {
+		database.DB.First(&currentUser, userID)
+	}
+	currentUsername := currentUser.Username
+
+	return c.Render(http.StatusOK, "allArticle.html", map[string]interface{}{
+		"articles":        articles,
+		"currentUsername": currentUsername,
+	})
 }

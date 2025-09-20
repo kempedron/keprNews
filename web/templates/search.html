@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Новостной портал - Вход</title>
+    <title>Новостной портал - Поиск статей</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -45,7 +45,7 @@
 
         header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 50px;
             padding: 20px;
         }
 
@@ -53,7 +53,7 @@
             font-size: 36px;
             font-weight: 700;
             color: var(--primary-color);
-            margin-bottom: 10px;
+            margin-bottom: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -64,23 +64,25 @@
             font-size: 40px;
         }
 
-        .login-card {
+        .search-card {
             background: white;
             border-radius: var(--border-radius);
             box-shadow: var(--box-shadow);
             padding: 40px;
             text-align: center;
             transition: var(--transition);
-            max-width: 450px;
-            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 40px;
         }
 
-        .login-card:hover {
+        .search-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
         }
 
-        .login-icon {
+        .search-icon {
             font-size: 54px;
             color: var(--primary-color);
             margin-bottom: 20px;
@@ -91,94 +93,66 @@
             justify-content: center;
             background: rgba(67, 97, 238, 0.1);
             border-radius: 50%;
-            margin: 0 auto 20px;
         }
 
-        .login-card h2 {
+        .search-card h2 {
             font-size: 24px;
-            margin-bottom: 5px;
+            margin-bottom: 15px;
             color: var(--dark-color);
         }
 
-        .login-card p {
+        .search-card p {
             color: var(--gray-color);
             margin-bottom: 25px;
+            max-width: 500px;
         }
 
-        .login-form {
+        .search-form {
             display: flex;
-            flex-direction: column;
-            gap: 20px;
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
         }
 
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            text-align: left;
-        }
-
-        .form-group label {
-            margin-bottom: 8px;
-            font-weight: 500;
-            color: var(--dark-color);
-        }
-
-        .form-input {
-            padding: 15px;
-            border: 2px solid #e9ecef;
-            border-radius: var(--border-radius);
+        .search-input {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid var(--primary-color);
+            border-right: none;
+            border-radius: var(--border-radius) 0 0 var(--border-radius);
             outline: none;
             font-size: 16px;
             transition: var(--transition);
         }
 
-        .form-input:focus {
-            border-color: var(--primary-color);
+        .search-input:focus {
             box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
         }
 
-        .login-button {
-            padding: 15px;
+        .search-button {
+            padding: 0 25px;
             background: var(--primary-color);
             color: white;
             border: none;
-            border-radius: var(--border-radius);
+            border-radius: 0 var(--border-radius) var(--border-radius) 0;
             cursor: pointer;
             transition: var(--transition);
             display: flex;
             align-items: center;
-            justify-content: center;
             gap: 8px;
             font-weight: 500;
             font-size: 16px;
-            margin-top: 10px;
         }
 
-        .login-button:hover {
+        .search-button:hover {
             background: var(--secondary-color);
-            transform: translateY(-2px);
-        }
-
-        .register-link {
-            margin-top: 20px;
-            color: var(--gray-color);
-        }
-
-        .register-link a {
-            color: var(--primary-color);
-            text-decoration: none;
-            font-weight: 500;
-        }
-
-        .register-link a:hover {
-            text-decoration: underline;
         }
 
         .nav-buttons {
             display: flex;
             justify-content: center;
             gap: 15px;
-            margin-top: 30px;
+            margin-top: 20px;
             flex-wrap: wrap;
         }
 
@@ -223,18 +197,34 @@
                 font-size: 32px;
             }
             
-            .login-card {
+            .search-card {
                 padding: 20px;
             }
             
-            .login-icon {
+            .search-icon {
                 font-size: 40px;
                 width: 60px;
                 height: 60px;
             }
             
-            .login-card h2 {
+            .search-card h2 {
                 font-size: 20px;
+            }
+            
+            .search-form {
+                flex-direction: column;
+            }
+            
+            .search-input {
+                border-right: 2px solid var(--primary-color);
+                border-radius: var(--border-radius);
+                margin-bottom: 10px;
+            }
+            
+            .search-button {
+                border-radius: var(--border-radius);
+                justify-content: center;
+                padding: 12px;
             }
             
             .nav-buttons {
@@ -258,32 +248,19 @@
             </div>
         </header>
 
-        <div class="login-card">
-            <div class="login-icon">
-                <i class="fas fa-user-lock"></i>
+        <div class="search-card">
+            <div class="search-icon">
+                <i class="fas fa-search"></i>
             </div>
-            <h2>Вход в систему</h2>
-            <p>Введите свои учетные данные для доступа к порталу</p>
+            <h2>Поиск статей</h2>
+            <p>Найдите интересующие вас статьи по ключевым словам, тегам или авторам</p>
             
-            <form class="login-form" action="/login" method="post">
-                <div class="form-group">
-                    <label for="username">Имя пользователя</label>
-                    <input type="text" id="username" name="username" class="form-input" placeholder="Введите имя пользователя" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="password">Пароль</label>
-                    <input type="password" id="password" name="password" class="form-input" placeholder="Введите пароль" required>
-                </div>
-                
-                <button type="submit" class="login-button">
-                    <i class="fas fa-sign-in-alt"></i> Войти
+            <form class="search-form" action="/article/search" method="get">
+                <input type="text" name="search-query" class="search-input" placeholder="Введите поисковый запрос..." required>
+                <button type="submit" class="search-button">
+                    <i class="fas fa-search"></i> Найти
                 </button>
             </form>
-            
-            <div class="register-link">
-                Нет аккаунта? <a href="/register-page">Зарегистрируйтесь</a>
-            </div>
         </div>
 
         <div class="nav-buttons">
@@ -293,8 +270,8 @@
             <a href="/articles" class="nav-btn">
                 <i class="fas fa-list"></i> Все статьи
             </a>
-            <a href="/search" class="nav-btn">
-                <i class="fas fa-search"></i> Поиск
+            <a href="/add-article-page" class="nav-btn">
+                <i class="fas fa-plus"></i> Добавить статью
             </a>
         </div>
 
