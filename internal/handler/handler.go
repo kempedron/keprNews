@@ -52,7 +52,7 @@ func Register(c echo.Context) error {
 	cookie.Path = "/"
 	cookie.HttpOnly = true
 	c.SetCookie(cookie)
-	return c.Redirect(http.StatusSeeOther, "/home")
+	return c.Redirect(http.StatusSeeOther, "/")
 }
 
 func Login(c echo.Context) error {
@@ -85,9 +85,10 @@ func Login(c echo.Context) error {
 	cookie.Path = "/"
 	cookie.HttpOnly = true
 	c.SetCookie(cookie)
-	return c.Redirect(http.StatusSeeOther, "/home")
+	return c.Redirect(http.StatusSeeOther, "/")
 }
 func AddArticlePage(c echo.Context) error {
+
 	return c.File("web/templates/addArticle.html")
 }
 
@@ -198,6 +199,7 @@ func AddArticle(c echo.Context) error {
 		"article": article,
 	})
 }
+
 func AllArticle(c echo.Context) error {
 	articles, err := GetArticlesWithDetails(database.DB)
 	if err != nil {
@@ -267,7 +269,7 @@ func GetArticleByID(db *gorm.DB, articleID uint64) (models.Article, error) {
 
 func DeleteArticle(c echo.Context) error {
 	articleID := c.Param("article_id")
-	//referer := c.Request().Referer()
+	referer := c.Request().Referer()
 	articleUint, err := strconv.ParseUint(articleID, 10, 32)
 	if err != nil {
 		log.Printf("errror parse articleID -> uint: %s", err)
@@ -289,8 +291,7 @@ func DeleteArticle(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "ошибка при удалении статьи"})
 	}
-	return c.String(http.StatusOK, "статья удалена")
-	//return c.Redirect(http.StatusFound, referer)
+	return c.Redirect(http.StatusFound, referer)
 }
 
 func DeleteArticleByID(db *gorm.DB, articleID uint64) error {

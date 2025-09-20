@@ -183,6 +183,7 @@
             flex-wrap: wrap;
             gap: 8px;
             margin-bottom: 16px;
+            padding-right: 40px; /* Добавляем отступ для кнопки удаления */
         }
 
         .article-tag {
@@ -312,6 +313,10 @@
             .page-title {
                 font-size: 2rem;
             }
+
+            .article-tags {
+                padding-right: 0;
+            }
         }
 
         /* Animation for cards */
@@ -324,7 +329,7 @@
             animation: fadeIn 0.5s ease-out;
         }
 
-        /* Delete button styles */
+        /* Delete button styles - ИЗМЕНЕНО */
         .delete-form {
             position: absolute;
             top: 15px;
@@ -344,12 +349,13 @@
             display: flex;
             align-items: center;
             gap: 5px;
+            box-shadow: var(--shadow-sm);
         }
 
         .btn-delete:hover {
             background-color: #c1121f;
             transform: translateY(-2px);
-            box-shadow: var(--shadow-sm);
+            box-shadow: var(--shadow-md);
         }
 
         /* Loading state (if needed in future) */
@@ -375,7 +381,7 @@
                     <span>Новостной портал</span>
                 </a>
                 <div class="nav-buttons">
-                    <a href="/home-page" class="nav-btn">
+                    <a href="/" class="nav-btn">
                         <i class="fas fa-home"></i> Главная
                     </a>
                     <a href="/add-article-page" class="nav-btn">
@@ -403,7 +409,7 @@
                         <form class="delete-form" action="/article/delete/{{.ID}}" method="POST">
                             <input type="hidden" name="_method" value="DELETE">
                             <button type="submit" class="btn-delete" onclick="return confirm('Вы уверены, что хотите удалить эту статью?')">
-                                <i class="fas fa-trash"></i> Удалить
+                                <i class="fas fa-trash"></i>
                             </button>
                         </form>
                         {{end}}

@@ -67,7 +67,6 @@ func main() {
 	e.POST("/register", handler.Register)
 	protected := e.Group("")
 	protected.Use(middleware.JWTAuth)
-	protected.GET("/home", handler.HomePage)
 	protected.GET("/popular-news", handler.AllArticle)
 	protected.GET("/add-article-page", handler.AddArticlePage)
 	protected.POST("/add-article", handler.AddArticle)
