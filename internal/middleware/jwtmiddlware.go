@@ -33,3 +33,15 @@ func JWTAuth(next echo.HandlerFunc) echo.HandlerFunc {
 		return next(c)
 	}
 }
+
+func GetUserIDFromToken(c echo.Context) (uint, error) {
+	cookie, err := c.Cookie("jwt")
+	if err != nil {
+		return 0, err
+	}
+	token, err := jwt.ValidateToken(cookie.Value)
+	if err != nil {
+		return 0, err
+	}
+	return token.UserID, nil
+}

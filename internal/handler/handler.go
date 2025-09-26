@@ -87,10 +87,6 @@ func Login(c echo.Context) error {
 	c.SetCookie(cookie)
 	return c.Redirect(http.StatusSeeOther, "/")
 }
-func AddArticlePage(c echo.Context) error {
-
-	return c.File("web/templates/addArticle.html")
-}
 
 func AddArticle(c echo.Context) error {
 	type ArticleRequest struct {
@@ -237,7 +233,7 @@ func HomePage(c echo.Context) error {
 	if err := database.DB.First(&user, userID).Error; err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "user not found"})
 	}
-	return c.Render(http.StatusOK, "homepage.html", user)
+	return c.Render(http.StatusOK, "index.html", user)
 
 }
 func GetArticle(c echo.Context) error {

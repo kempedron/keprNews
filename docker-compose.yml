@@ -1,0 +1,38 @@
+version: '3.8'  # Обновите версию
+
+services:
+  webapp:
+    build: .
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy  # Ждем готовности БД
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: dbUser
+      DB_PASSWORD: 123456
+      DB_NAME: newDataBase
+    restart: always
+
+  db:
+    image: postgres:14-alpine
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./create_db_and_user.sql:/docker-entrypoint-initdb.d/create_db_and_user.sql
+    environment:
+      POSTGRES_DB: newDataBase
+      POSTGRES_USER: dbUser
+      POSTGRES_PASSWORD: 123456
+    ports:
+      - "5432:5432"
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dbUser -d newDataBase"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata:
