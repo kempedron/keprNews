@@ -6,6 +6,7 @@
     <title>Новостной портал</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* Ваши стили остаются без изменений */
         :root {
             --primary-color: #4361ee;
             --secondary-color: #3a0ca3;
@@ -433,7 +434,7 @@
             <a href="/popular-news" class="quick-link">
                 <i class="fas fa-list"></i> Все статьи
             </a>
-            <a href="" class="quick-link">
+            <a href="/about" class="quick-link">
                 <i class="fas fa-info-circle"></i> О проекте
             </a>
             <a href="#" class="quick-link">
@@ -447,118 +448,80 @@
     </div>
 
     <script>
-        // Функция для проверки авторизации
+        // Глобальные переменные для управления состоянием
+        let authCheckInProgress = false;
+        let lastAuthCheckTime = 0;
+        const AUTH_CHECK_DELAY = 5000; // 5 секунд между проверками
+
+        // Основная функция проверки авторизации
         async function checkAuth() {
+            // Защита от множественных одновременных запросов
+            if (authCheckInProgress) return;
+            if (Date.now() - lastAuthCheckTime < AUTH_CHECK_DELAY) return;
+            
+            authCheckInProgress = true;
+            lastAuthCheckTime = Date.now();
+            
             try {
-                // Проверяем доступность защищенного эндпоинта
-                const response = await fetch('/popular-news', {
-                    credentials: 'include',
-                    method: 'HEAD' // Используем HEAD для минимизации трафика
-                });
-                
-                if (response.ok) {
-                    // Если запрос успешен, получаем информацию о пользователе
-                    await getUserInfo();
-                } else {
-                    // Пользователь не авторизован
-                    showGuestButtons();
-                }
-            } catch (error) {
-                console.error('Ошибка при проверке авторизации:', error);
-                showGuestButtons();
-            }
-        }
-
-        // Функция для получения информации о пользователе
-        async function getUserInfo() {
-            try {
-                // Получаем информацию из защищенного эндпоинта
-                const response = await fetch('/popular-news', {
-                    credentials: 'include'
-                });
-                
-                if (response.ok) {
-                    // Парсим HTML ответ для извлечения информации о пользователе
-                    const html = await response.text();
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(html, 'text/html');
-                    
-                    // Ищем элемент с именем пользователя (адаптируйте под вашу разметку)
-                    const usernameElement = doc.querySelector('.username, [data-username]');
-                    let username = 'Пользователь';
-                    
-                    if (usernameElement) {
-                        username = usernameElement.textContent || usernameElement.getAttribute('data-username') || 'Пользователь';
-                    }
-                    
-                    showUserInfo(username);
-                } else {
-                    showGuestButtons();
-                }
-            } catch (error) {
-                console.error('Ошибка при получении информации о пользователе:', error);
-                showGuestButtons();
-            }
-        }
-
-        // Альтернативный метод проверки через простой API endpoint
-        async function checkAuthAlternative() {
-            try {
-                // Создайте на сервере простой endpoint для проверки авторизации
                 const response = await fetch('/get-info/user-info', {
-                    credentials: 'include'
+                    credentials: 'include',
+                    headers: {
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    }
                 });
                 
                 if (response.ok) {
                     const userData = await response.json();
-                    showUserInfo(userData.username);
+                    if (userData.IsAuthorized) {
+                        showUserInfo(userData.Username);
+                    } else {
+                        showGuestButtons();
+                    }
                 } else {
                     showGuestButtons();
                 }
             } catch (error) {
                 console.error('Ошибка при проверке авторизации:', error);
-                // Пробуем основной метод как запасной вариант
-                await checkAuth();
+                showGuestButtons();
+            } finally {
+                authCheckInProgress = false;
             }
         }
 
         // Функция для отображения информации о пользователе
         function showUserInfo(username) {
-            // Показываем информацию пользователя и скрываем кнопки для гостей
-            document.getElementById('guest-buttons').style.display = 'none';
-            document.getElementById('user-info').style.display = 'block';
-            document.getElementById('username').textContent = username;
+            // Плавное изменение интерфейса без дергания
+            const guestButtons = document.getElementById('guest-buttons');
+            const userInfo = document.getElementById('user-info');
+            const mobileGuestButtons = document.getElementById('mobile-guest-buttons');
+            const mobileUserInfo = document.getElementById('mobile-user-info');
             
-            document.getElementById('mobile-guest-buttons').style.display = 'none';
-            document.getElementById('mobile-user-info').style.display = 'block';
-            document.getElementById('mobile-username').textContent = username;
-            
-            // Дополнительно: меняем ссылки для авторизованных пользователей
-            updateLinksForAuthUser();
+            if (guestButtons.style.display !== 'none') {
+                guestButtons.style.display = 'none';
+                userInfo.style.display = 'block';
+                document.getElementById('username').textContent = username;
+                
+                mobileGuestButtons.style.display = 'none';
+                mobileUserInfo.style.display = 'block';
+                document.getElementById('mobile-username').textContent = username;
+            }
         }
 
         // Функция для отображения кнопок для гостей
         function showGuestButtons() {
-            document.getElementById('guest-buttons').style.display = 'flex';
-            document.getElementById('user-info').style.display = 'none';
+            const guestButtons = document.getElementById('guest-buttons');
+            const userInfo = document.getElementById('user-info');
+            const mobileGuestButtons = document.getElementById('mobile-guest-buttons');
+            const mobileUserInfo = document.getElementById('mobile-user-info');
             
-            document.getElementById('mobile-guest-buttons').style.display = 'flex';
-            document.getElementById('mobile-user-info').style.display = 'none';
-            
-            // Восстанавливаем стандартные ссылки
-            restoreDefaultLinks();
-        }
-
-        // Обновляем ссылки для авторизованных пользователей
-        function updateLinksForAuthUser() {
-            // Можно добавить дополнительную логику, если нужно
-            console.log('Пользователь авторизован');
-        }
-
-        // Восстанавливаем стандартные ссылки
-        function restoreDefaultLinks() {
-            // Можно добавить дополнительную логику, если нужно
-            console.log('Пользователь не авторизован');
+            if (userInfo.style.display !== 'none') {
+                guestButtons.style.display = 'flex';
+                userInfo.style.display = 'none';
+                
+                mobileGuestButtons.style.display = 'flex';
+                mobileUserInfo.style.display = 'none';
+            }
         }
 
         // Функция для выхода
@@ -570,10 +533,11 @@
                 });
                 
                 if (response.ok) {
-                    // После выхода показываем кнопки для гостей
+                    // Показываем кнопки для гостей и обновляем страницу
                     showGuestButtons();
-                    // Опционально: перезагружаем страницу
-                    window.location.href = '/';
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 100);
                 } else {
                     alert('Ошибка при выходе');
                 }
@@ -583,17 +547,60 @@
             }
         }
 
-        // Проверяем авторизацию при загрузке страницы
-        document.addEventListener('DOMContentLoaded', function() {
-            // Сначала пробуем альтернативный метод (если endpoint /api/user-info существует)
-            checkAuthAlternative().catch(() => {
-                // Если альтернативный метод не сработал, используем основной
-                checkAuth();
+        // Функция для принудительного обновления после входа
+        function refreshAfterLogin() {
+            // Простое обновление страницы без сложной логики
+            setTimeout(() => {
+                window.location.reload();
+            }, 100);
+        }
+
+        // Проверка недавнего входа (упрощенная версия)
+        function checkRecentLogin() {
+            const loginTime = localStorage.getItem('loginTime');
+            if (loginTime) {
+                const timeSinceLogin = Date.now() - parseInt(loginTime);
+                if (timeSinceLogin < 5000) { // 5 секунд
+                    localStorage.removeItem('loginTime');
+                    refreshAfterLogin();
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // Перехват формы входа (для страницы логина)
+        function interceptLoginForms() {
+            // Эта функция будет работать на странице логина
+            const forms = document.querySelectorAll('form');
+            forms.forEach(form => {
+                if (form.action.includes('/login')) {
+                    form.addEventListener('submit', function() {
+                        localStorage.setItem('loginTime', Date.now().toString());
+                    });
+                }
             });
+        }
+
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            // Проверяем, не был ли только что выполнен вход
+            if (checkRecentLogin()) {
+                return;
+            }
+            
+            // Перехватываем формы входа (если они есть на этой странице)
+            interceptLoginForms();
+            
+            // Однократная проверка авторизации при загрузке
+            checkAuth();
+            
+            // Периодическая проверка раз в 2 минуты (а не каждые 5 секунд)
+            setInterval(checkAuth, 2 * 60 * 1000);
         });
 
-        // Дополнительно: периодическая проверка авторизации (каждые 5 минут)
-        setInterval(checkAuth, 5 * 60 * 1000);
+        // Глобальная функция для принудительного обновления после входа
+        window.forceRefreshAfterLogin = refreshAfterLogin;
     </script>
 </body>
 </html>
