@@ -355,3 +355,13 @@ func SearchArticles(c echo.Context) error {
 		"currentUsername": currentUsername,
 	})
 }
+
+func Logout(c echo.Context) error {
+	cookie := new(http.Cookie)
+	cookie.Name = "jwt"
+	cookie.Value = ""
+	cookie.Expires = time.Now().Add(-time.Hour)
+	cookie.Path = "/"
+	c.SetCookie(cookie)
+	return c.JSON(http.StatusOK, map[string]string{"message": "Logged out successfully"})
+}

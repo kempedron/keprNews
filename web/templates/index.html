@@ -54,6 +54,7 @@
         .auth-buttons {
             display: flex;
             gap: 15px;
+            align-items: center;
         }
 
         .auth-btn {
@@ -89,6 +90,29 @@
             color: white;
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .auth-btn-logout {
+            background: #dc3545;
+            color: white;
+        }
+
+        .auth-btn-logout:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: var(--dark-color);
+        }
+
+        .username {
+            font-weight: 600;
+            color: var(--primary-color);
         }
 
         header {
@@ -315,12 +339,25 @@
         <!-- Панель авторизации для десктопов -->
         <div class="auth-panel">
             <div class="auth-buttons">
-                <a href="/register-page" class="auth-btn auth-btn-register">
-                    <i class="fas fa-user-plus"></i> Регистрация
-                </a>
-                <a href="/login-page" class="auth-btn auth-btn-login">
-                    <i class="fas fa-sign-in-alt"></i> Вход
-                </a>
+                <!-- Блок для неавторизованных пользователей -->
+                <div id="guest-buttons">
+                    <a href="/register-page" class="auth-btn auth-btn-register">
+                        <i class="fas fa-user-plus"></i> Регистрация
+                    </a>
+                    <a href="/login-page" class="auth-btn auth-btn-login">
+                        <i class="fas fa-sign-in-alt"></i> Вход
+                    </a>
+                </div>
+                
+                <!-- Блок для авторизованных пользователей -->
+                <div id="user-info" style="display: none;">
+                    <div class="user-info">
+                        <span>Добро пожаловать, <span class="username" id="username"></span>!</span>
+                        <a href="#" class="auth-btn auth-btn-logout" onclick="logout()">
+                            <i class="fas fa-sign-out-alt"></i> Выход
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -333,12 +370,27 @@
             
             <!-- Мобильная авторизация -->
             <div class="mobile-auth">
-                <a href="/register-page" class="auth-btn auth-btn-register">
-                    <i class="fas fa-user-plus"></i> Регистрация
-                </a>
-                <a href="/login-page" class="auth-btn auth-btn-login">
-                    <i class="fas fa-sign-in-alt"></i> Вход
-                </a>
+                <!-- Блок для неавторизованных пользователей -->
+                <div id="mobile-guest-buttons">
+                    <a href="/register-page" class="auth-btn auth-btn-register">
+                        <i class="fas fa-user-plus"></i> Регистрация
+                    </a>
+                    <a href="/login-page" class="auth-btn auth-btn-login">
+                        <i class="fas fa-sign-in-alt"></i> Вход
+                    </a>
+                </div>
+                
+                <!-- Блок для авторизованных пользователей -->
+                <div id="mobile-user-info" style="display: none;">
+                    <div style="text-align: center;">
+                        <div style="margin-bottom: 15px; color: var(--dark-color);">
+                            Добро пожаловать, <span class="username" id="mobile-username"></span>!
+                        </div>
+                        <a href="/logout" class="auth-btn auth-btn-logout" onclick="logout()">
+                            <i class="fas fa-sign-out-alt"></i> Выход
+                        </a>
+                    </div>
+                </div>
             </div>
         </header>
 
@@ -393,5 +445,155 @@
             <p>© 2023 Сайт новостей. Все права защищены.</p>
         </footer>
     </div>
+
+    <script>
+        // Функция для проверки авторизации
+        async function checkAuth() {
+            try {
+                // Проверяем доступность защищенного эндпоинта
+                const response = await fetch('/popular-news', {
+                    credentials: 'include',
+                    method: 'HEAD' // Используем HEAD для минимизации трафика
+                });
+                
+                if (response.ok) {
+                    // Если запрос успешен, получаем информацию о пользователе
+                    await getUserInfo();
+                } else {
+                    // Пользователь не авторизован
+                    showGuestButtons();
+                }
+            } catch (error) {
+                console.error('Ошибка при проверке авторизации:', error);
+                showGuestButtons();
+            }
+        }
+
+        // Функция для получения информации о пользователе
+        async function getUserInfo() {
+            try {
+                // Получаем информацию из защищенного эндпоинта
+                const response = await fetch('/popular-news', {
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    // Парсим HTML ответ для извлечения информации о пользователе
+                    const html = await response.text();
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    
+                    // Ищем элемент с именем пользователя (адаптируйте под вашу разметку)
+                    const usernameElement = doc.querySelector('.username, [data-username]');
+                    let username = 'Пользователь';
+                    
+                    if (usernameElement) {
+                        username = usernameElement.textContent || usernameElement.getAttribute('data-username') || 'Пользователь';
+                    }
+                    
+                    showUserInfo(username);
+                } else {
+                    showGuestButtons();
+                }
+            } catch (error) {
+                console.error('Ошибка при получении информации о пользователе:', error);
+                showGuestButtons();
+            }
+        }
+
+        // Альтернативный метод проверки через простой API endpoint
+        async function checkAuthAlternative() {
+            try {
+                // Создайте на сервере простой endpoint для проверки авторизации
+                const response = await fetch('/get-info/user-info', {
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const userData = await response.json();
+                    showUserInfo(userData.username);
+                } else {
+                    showGuestButtons();
+                }
+            } catch (error) {
+                console.error('Ошибка при проверке авторизации:', error);
+                // Пробуем основной метод как запасной вариант
+                await checkAuth();
+            }
+        }
+
+        // Функция для отображения информации о пользователе
+        function showUserInfo(username) {
+            // Показываем информацию пользователя и скрываем кнопки для гостей
+            document.getElementById('guest-buttons').style.display = 'none';
+            document.getElementById('user-info').style.display = 'block';
+            document.getElementById('username').textContent = username;
+            
+            document.getElementById('mobile-guest-buttons').style.display = 'none';
+            document.getElementById('mobile-user-info').style.display = 'block';
+            document.getElementById('mobile-username').textContent = username;
+            
+            // Дополнительно: меняем ссылки для авторизованных пользователей
+            updateLinksForAuthUser();
+        }
+
+        // Функция для отображения кнопок для гостей
+        function showGuestButtons() {
+            document.getElementById('guest-buttons').style.display = 'flex';
+            document.getElementById('user-info').style.display = 'none';
+            
+            document.getElementById('mobile-guest-buttons').style.display = 'flex';
+            document.getElementById('mobile-user-info').style.display = 'none';
+            
+            // Восстанавливаем стандартные ссылки
+            restoreDefaultLinks();
+        }
+
+        // Обновляем ссылки для авторизованных пользователей
+        function updateLinksForAuthUser() {
+            // Можно добавить дополнительную логику, если нужно
+            console.log('Пользователь авторизован');
+        }
+
+        // Восстанавливаем стандартные ссылки
+        function restoreDefaultLinks() {
+            // Можно добавить дополнительную логику, если нужно
+            console.log('Пользователь не авторизован');
+        }
+
+        // Функция для выхода
+        async function logout() {
+            try {
+                const response = await fetch('/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    // После выхода показываем кнопки для гостей
+                    showGuestButtons();
+                    // Опционально: перезагружаем страницу
+                    window.location.href = '/';
+                } else {
+                    alert('Ошибка при выходе');
+                }
+            } catch (error) {
+                console.error('Ошибка при выходе:', error);
+                alert('Ошибка при выходе');
+            }
+        }
+
+        // Проверяем авторизацию при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            // Сначала пробуем альтернативный метод (если endpoint /api/user-info существует)
+            checkAuthAlternative().catch(() => {
+                // Если альтернативный метод не сработал, используем основной
+                checkAuth();
+            });
+        });
+
+        // Дополнительно: периодическая проверка авторизации (каждые 5 минут)
+        setInterval(checkAuth, 5 * 60 * 1000);
+    </script>
 </body>
 </html>

@@ -72,7 +72,7 @@ func main() {
 		MaxAge: 86400,
 	}))
 
-	e.GET("/", func(c echo.Context) error {
+	e.GET("/get-info/user-info", func(c echo.Context) error {
 		userID, err := middleware.GetUserIDFromToken(c)
 		if err != nil {
 			return c.File("templates/index.html")
@@ -81,10 +81,12 @@ func main() {
 		if err := database.DB.First(&user, userID).Error; err != nil {
 			return c.File("templates/index.html")
 		}
-		return c.Render(http.StatusOK, "index.html", map[string]interface{}{
+		return c.JSON(http.StatusOK, map[string]interface{}{
 			"IsAuthorized": true,
 			"Username":     user.Username,
 		})
+	})
+	e.GET("/", func(c echo.Context) error {
 		return c.File("templates/index.html")
 	})
 	e.GET("/login-page", func(c echo.Context) error {
@@ -98,6 +100,7 @@ func main() {
 	})
 	e.POST("/login", handler.Login)
 	e.POST("/register", handler.Register)
+	e.POST("/logout", handler.Logout)
 	protected := e.Group("")
 	protected.Use(middleware.JWTAuth)
 	protected.GET("/popular-news", handler.AllArticle)
