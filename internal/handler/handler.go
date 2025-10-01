@@ -249,8 +249,8 @@ func GetArticle(c echo.Context) error {
 		log.Printf("error parse articleID -> uint: %s", err)
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Неверный формат ID статьи"})
 	}
-	cacheKey = "article:" + articleID
-	cachedData, err := redisClient.Get(c.Request().Context(), articleID).Result()
+	cacheKey := "article:" + articleID
+	cachedData, err := redisClient.Get(c.Request().Context(), cacheKey).Result()
 	if err == nil {
 		// Кеш найден, возвращаем данные
 		var article models.Article
