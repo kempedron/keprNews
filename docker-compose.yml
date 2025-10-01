@@ -7,15 +7,18 @@ services:
       - "8080:8080"
     depends_on:
       db:
-        condition: service_healthy  # Ждем готовности БД
+        condition: service_healthy
+      redis: # Добавляем зависимость от Redis
+        condition: service_healthy
     environment:
       DB_HOST: db
       DB_PORT: 5432
       DB_USER: dbUser
       DB_PASSWORD: 123456
       DB_NAME: newDataBase
+      REDIS_HOST: redis # Хост внутри сети Docker Compose - это имя сервиса
+      REDIS_PORT: 6379
     restart: always
-
   db:
     image: postgres:14-alpine
     volumes:
@@ -35,17 +38,21 @@ services:
       retries: 10
 
   redis:
-    image: redis:7-alpine
+    image: redis:7.4-alpine # Используется стабильный Alpine-образ
+    container_name: redis
+    restart: always
     ports:
       - "6379:6379"
-    restart: always
-    healthcheck:
+    environment:
+      - REDIS_PASSWORD=123456 # Установка пароля для подключения
+      - REDIS_APPENDONLY=yes   # Включение持久化 для сохранения данных на диск:cite[5]
+    volumes:
+      - redis_data:/data # Сохранение данных Redis на хост-машине
+    healthcheck: # Проверка здоровья контейнера
       test: ["CMD", "redis-cli", "--raw", "ping"]
       interval: 5s
       timeout: 3s
       retries: 5
-    volumes:
-      - redis_data:/data
 
 volumes:
   pgdata:

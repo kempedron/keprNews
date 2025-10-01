@@ -32,8 +32,11 @@ var redisClient *redis.Client
 
 func main() {
 	fmt.Println("hello from kepr news!")
+	redisHost := os.Getenv("REDIS_HOST")
+	redisPort := os.Getenv("REDIS_PORT")
+
 	redisClient = redis.NewClient(&redis.Options{
-		Addr:     os.Getenv("REDIS_HOST") + ":" + os.Getenv("REDIS_PORT"),
+		Addr:     redisHost + ":" + redisPort,
 		Password: "", // если нет пароля
 		DB:       0,  // используем базу по умолчанию
 	})
