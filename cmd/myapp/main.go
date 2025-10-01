@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"html/template"
 	"io"
@@ -12,9 +13,11 @@ import (
 	"news/internal/models"
 	"os"
 	"path/filepath"
+	"time"
 
 	echo "github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
+	"github.com/redis/go-redis/v9"
 )
 
 type TemplateRegistry struct {
@@ -25,8 +28,24 @@ func (t *TemplateRegistry) Render(w io.Writer, name string, data interface{}, c 
 	return t.templates.ExecuteTemplate(w, name, data)
 }
 
+var redisClient *redis.Client
+
 func main() {
 	fmt.Println("hello from kepr news!")
+	redisClient = redis.NewClient(&redis.Options{
+		Addr:     os.Getenv("REDIS_HOST") + ":" + os.Getenv("REDIS_PORT"),
+		Password: "", // если нет пароля
+		DB:       0,  // используем базу по умолчанию
+	})
+
+	// Проверяем подключение
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := redisClient.Ping(ctx).Err(); err != nil {
+		log.Fatalf("Failed to connect to Redis: %v", err)
+	}
+	log.Println("Successfully connected to Redis")
+
 	database.InitDB()
 	e := echo.New()
 	// Проверяем существование папки
@@ -103,6 +122,7 @@ func main() {
 	e.POST("/logout", handler.Logout)
 	protected := e.Group("")
 	protected.Use(middleware.JWTAuth)
+	protected.Use(middleware.ReqPerSecLimitMiddleware(5))
 	protected.GET("/popular-news", handler.AllArticle)
 	protected.GET("/add-article-page", func(c echo.Context) error {
 		return c.File("templates/addArticle.html")

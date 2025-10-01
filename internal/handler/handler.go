@@ -1,9 +1,12 @@
 package handler
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
 	"news/internal/database"
 	"news/internal/jwt"
@@ -13,8 +16,11 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
+
+var redisClient *redis.Client
 
 type AuthRequest struct {
 	Username string `form:"username" validate:"required, min=3"`
@@ -243,15 +249,38 @@ func GetArticle(c echo.Context) error {
 		log.Printf("error parse articleID -> uint: %s", err)
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Неверный формат ID статьи"})
 	}
-	article, err := GetArticleByID(database.DB, articleIDUint)
+	cacheKey = "article:" + articleID
+	cachedData, err := redisClient.Get(c.Request().Context(), articleID).Result()
+	if err == nil {
+		// Кеш найден, возвращаем данные
+		var article models.Article
+		json.Unmarshal([]byte(cachedData), &article)
+		return c.JSON(http.StatusOK, article)
+	}
+
+	article, err := GetArticleByIDFromDB(database.DB, articleIDUint)
 	if err != nil {
 		log.Printf("error in getting article by ID: %s", err)
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ошибка на стороне сервера"})
 	}
+
+	go func(art models.Article) {
+		serialized, err := json.Marshal(art)
+		if err != nil {
+			log.Printf("failed to marshal article for cache: %v", err)
+			return
+		}
+		// Устанавливаем TTL 5 минут с небольшим случайным отклонением (jitter) для защиты от одновременного протухания многих ключей :cite[1]
+		ttl := 5*time.Minute + time.Duration(rand.Intn(30))*time.Second
+		if err := redisClient.Set(context.Background(), cacheKey, serialized, ttl).Err(); err != nil {
+			log.Printf("failed to set cache: %v", err)
+		}
+	}(article)
+
 	return c.Render(http.StatusOK, "article.html", article)
 }
 
-func GetArticleByID(db *gorm.DB, articleID uint64) (models.Article, error) {
+func GetArticleByIDFromDB(db *gorm.DB, articleID uint64) (models.Article, error) {
 	var article models.Article
 	err := db.Preload("Author").Preload("Tags").First(&article, articleID).Error
 	if err != nil {

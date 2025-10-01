@@ -34,5 +34,19 @@ services:
       timeout: 5s
       retries: 10
 
+redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    volumes:
+      - redis_data:/data
+
 volumes:
   pgdata:
+  redis_data:
