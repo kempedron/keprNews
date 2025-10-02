@@ -1,8 +1,6 @@
 package main
 
 import (
-	"context"
-	"fmt"
 	"html/template"
 	"io"
 	"log"
@@ -11,13 +9,9 @@ import (
 	"news/internal/handler"
 	"news/internal/middleware"
 	"news/internal/models"
-	"os"
-	"path/filepath"
-	"time"
 
 	echo "github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
-	"github.com/redis/go-redis/v9"
 )
 
 type TemplateRegistry struct {
@@ -28,40 +22,18 @@ func (t *TemplateRegistry) Render(w io.Writer, name string, data interface{}, c 
 	return t.templates.ExecuteTemplate(w, name, data)
 }
 
-var redisClient *redis.Client
-
 func main() {
-	fmt.Println("hello from kepr news!")
-	redisHost := os.Getenv("REDIS_HOST")
-	redisPort := os.Getenv("REDIS_PORT")
-
-	redisClient = redis.NewClient(&redis.Options{
-		Addr:     redisHost + ":" + redisPort,
-		Password: "", // если нет пароля
-		DB:       0,  // используем базу по умолчанию
-	})
-
-	// Проверяем подключение
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	if err := redisClient.Ping(ctx).Err(); err != nil {
-		log.Fatalf("Failed to connect to Redis: %v", err)
-	}
-	log.Println("Successfully connected to Redis")
-
-	database.InitDB()
-	e := echo.New()
-	// Проверяем существование папки
-	if _, err := os.Stat("templates"); os.IsNotExist(err) {
-		log.Fatal("Templates directory does not exist")
-	}
-
-	// Проверяем, что файлы доступны
-	files, err := filepath.Glob("templates/*.html")
+	err := database.InitRedis()
 	if err != nil {
-		log.Fatalf("Error reading templates: %v", err)
+		log.Printf("error init redis: %s", err)
+		log.Fatal(err)
 	}
-	log.Printf("Found template files: %v", files)
+	err = database.InitDB()
+	if err != nil {
+		log.Printf("error init database: %s", err)
+		log.Fatal(err)
+	}
+	e := echo.New()
 
 	templates := template.Must(template.ParseGlob("templates/*.html"))
 	e.Renderer = &TemplateRegistry{
