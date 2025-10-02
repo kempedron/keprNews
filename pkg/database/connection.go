@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"news/internal/models"
+	"news/pkg/models"
 	"os"
 	"time"
 

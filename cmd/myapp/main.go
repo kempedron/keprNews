@@ -5,10 +5,12 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"news/internal/database"
-	"news/internal/handler"
-	"news/internal/middleware"
-	"news/internal/models"
+	articleHandler "news/internal/article/handler"
+	authHandler "news/internal/auth/handler"
+	"news/pkg/database"
+
+	"news/pkg/middleware"
+	"news/pkg/models"
 
 	echo "github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
@@ -92,20 +94,20 @@ func main() {
 	e.GET("/test", func(c echo.Context) error {
 		return c.String(http.StatusOK, "все работает")
 	})
-	e.POST("/login", handler.Login)
-	e.POST("/register", handler.Register)
-	e.POST("/logout", handler.Logout)
+	e.POST("/login", authHandler.Login)
+	e.POST("/register", authHandler.Register)
+	e.POST("/logout", authHandler.Logout)
 	protected := e.Group("")
 	protected.Use(middleware.JWTAuth)
 	protected.Use(middleware.ReqPerSecLimitMiddleware(5))
-	protected.GET("/popular-news", handler.AllArticle)
+	protected.GET("/popular-news", articleHandler.AllArticle)
 	protected.GET("/add-article-page", func(c echo.Context) error {
 		return c.File("templates/addArticle.html")
 	})
-	protected.POST("/add-article", handler.AddArticle)
-	protected.GET("/article/:article_id", handler.GetArticle)
-	protected.POST("/article/delete/:article_id", handler.DeleteArticle)
-	protected.GET("/article/search", handler.SearchArticles)
+	protected.POST("/add-article", articleHandler.AddArticle)
+	protected.GET("/article/:article_id", articleHandler.GetArticle)
+	protected.POST("/article/delete/:article_id", articleHandler.DeleteArticle)
+	protected.GET("/article/search", articleHandler.SearchArticles)
 	protected.GET("/search", func(c echo.Context) error {
 		return c.File("templates/search.html")
 	})

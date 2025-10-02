@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"net/http"
-	"news/internal/jwt"
+	"news/pkg/jwt"
 	"time"
 
 	"github.com/labstack/echo/v4"
