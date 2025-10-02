@@ -5,10 +5,11 @@ import (
 	"net/http"
 	"net/url"
 
+	"news/pkg/config"
 	myMiddleware "news/pkg/middleware"
 
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+	echoMiddleware "github.com/labstack/echo/v4/middleware"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -22,7 +23,7 @@ type Config struct {
 
 type ServiceProxy struct {
 	target *url.URL
-	proxy  middleware.ProxyBalancer
+	proxy  echoMiddleware.ProxyBalancer
 }
 
 type APIGateway struct {
@@ -40,11 +41,11 @@ func (g *APIGateway) initService() {
 	for name, serviceURL := range services {
 		target, err := url.Parse(serviceURL)
 		if err != nil {
-			log.Fatal("Failed to parse %s service URL: %v", name, err)
+			log.Fatalf("Failed to parse %s service URL: %v", name, err)
 		}
 		g.services[name] = &ServiceProxy{
 			target: target,
-			proxy: middleware.NewRoundRobinBalancer([]*middleware.ProxyTarget{
+			proxy: echoMiddleware.NewRoundRobinBalancer([]*echoMiddleware.ProxyTarget{
 				{URL: target},
 			}),
 		}
@@ -52,18 +53,22 @@ func (g *APIGateway) initService() {
 }
 
 func (g *APIGateway) setMiddleware() {
-	g.echo.Use(middleware.Logger())
-	g.echo.Use(middleware.Recover())
-	g.echo.Use(middleware.CORS())
-	g.echo.Use(middleware.Gzip())
+	g.echo.Use(echoMiddleware.Logger())
+	g.echo.Use(echoMiddleware.Recover())
+	g.echo.Use(echoMiddleware.CORS())
+	g.echo.Use(echoMiddleware.Gzip())
 
 	g.echo.Use(myMiddleware.ReqPerSecLimitMiddleware(5))
 }
 
 func (g *APIGateway) setRoutes() {
+	public := g.echo.Group("/api")
+	public.POST("/auth/register", g.proxyToAuthService)
+	public.POST("/auth/login", g.proxyToAuthService)
+	public.POST("/articles/:id", g.proxyToArticleService)
+
 	protected := g.echo.Group("/api")
 	protected.Use(myMiddleware.JWTAuth)
-
 	protected.POST("/articles", g.proxyToArticleService)
 	protected.PUT("/articles/:id", g.proxyToArticleService)
 	protected.DELETE("/articles/:id", g.proxyToArticleService)
@@ -87,12 +92,14 @@ func (g *APIGateway) proxyToService(serviceName string) echo.HandlerFunc {
 			})
 		}
 
-		// Используем echoMiddleware
-		proxy := echoMiddleware.ProxyWithConfig(echoMiddleware.ProxyConfig{
+		// Создаем функцию промежуточного ПО для прокси
+		proxyMiddleware := echoMiddleware.ProxyWithConfig(echoMiddleware.ProxyConfig{
 			Balancer: service.proxy,
 		})
 
-		return proxy(c)
+		// Оборачиваем middleware в обработчик
+		handler := proxyMiddleware(func(c echo.Context) error { return nil })
+		return handler(c)
 	}
 }
 
@@ -108,6 +115,13 @@ func main() {
 		log.Fatal("JWT_SECRET environment variable is required")
 	}
 	gateway := NewAPIGateway(cfg)
+
+	defer gateway.echo.Close()
+
+	log.Printf("API Gateway start on port %s", cfg.Port)
+	if err := gateway.echo.Start(":" + cfg.Port); err != nil {
+		log.Fatal("Failed to start API Gateway:", err)
+	}
 
 }
 
@@ -125,5 +139,7 @@ func NewAPIGateway(cfg *Config) *APIGateway {
 		services: make(map[string]*ServiceProxy),
 	}
 	gateway.initService()
-	g
+	gateway.setRoutes()
+	gateway.setMiddleware()
+	return gateway
 }
