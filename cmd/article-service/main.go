@@ -6,11 +6,9 @@ import (
 	"log"
 	"net/http"
 	articleHandler "news/internal/article/handler"
-	authHandler "news/internal/auth/handler"
 	"news/pkg/database"
 
 	"news/pkg/middleware"
-	"news/pkg/models"
 
 	echo "github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
@@ -67,36 +65,6 @@ func main() {
 		},
 		MaxAge: 86400,
 	}))
-
-	e.GET("/get-info/user-info", func(c echo.Context) error {
-		userID, err := middleware.GetUserIDFromToken(c)
-		if err != nil {
-			return c.File("templates/index.html")
-		}
-		var user models.User
-		if err := database.DB.First(&user, userID).Error; err != nil {
-			return c.File("templates/index.html")
-		}
-		return c.JSON(http.StatusOK, map[string]interface{}{
-			"IsAuthorized": true,
-			"Username":     user.Username,
-		})
-	})
-	e.GET("/", func(c echo.Context) error {
-		return c.File("templates/index.html")
-	})
-	e.GET("/login-page", func(c echo.Context) error {
-		return c.File("templates/loginpage.html")
-	})
-	e.GET("/register-page", func(c echo.Context) error {
-		return c.File("templates/registerpage.html")
-	})
-	e.GET("/test", func(c echo.Context) error {
-		return c.String(http.StatusOK, "все работает")
-	})
-	e.POST("/login", authHandler.Login)
-	e.POST("/register", authHandler.Register)
-	e.POST("/logout", authHandler.Logout)
 	protected := e.Group("")
 	protected.Use(middleware.JWTAuth)
 	protected.Use(middleware.ReqPerSecLimitMiddleware(5))

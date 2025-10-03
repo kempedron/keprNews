@@ -82,7 +82,6 @@ func (g *APIGateway) proxyToAuthService(c echo.Context) error {
 	return g.proxyToService("auth")(c)
 }
 
-// Общий метод для проксирования
 func (g *APIGateway) proxyToService(serviceName string) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		service, exists := g.services[serviceName]
@@ -92,12 +91,10 @@ func (g *APIGateway) proxyToService(serviceName string) echo.HandlerFunc {
 			})
 		}
 
-		// Создаем функцию промежуточного ПО для прокси
 		proxyMiddleware := echoMiddleware.ProxyWithConfig(echoMiddleware.ProxyConfig{
 			Balancer: service.proxy,
 		})
 
-		// Оборачиваем middleware в обработчик
 		handler := proxyMiddleware(func(c echo.Context) error { return nil })
 		return handler(c)
 	}
