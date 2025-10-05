@@ -36,7 +36,7 @@ func main() {
 	}
 	e := echo.New()
 
-	templates := template.Must(template.ParseGlob("templates/*.html"))
+	templates := template.Must(template.ParseGlob("web/templates/*.html"))
 	e.Renderer = &TemplateRegistry{
 		templates: templates,
 	}
@@ -70,11 +70,11 @@ func main() {
 	e.GET("/get-info/user-info", func(c echo.Context) error {
 		userID, err := middleware.GetUserIDFromToken(c)
 		if err != nil {
-			return c.File("templates/index.html")
+			return c.File("web/templates/index.html")
 		}
 		var user models.User
 		if err := database.DB.First(&user, userID).Error; err != nil {
-			return c.File("templates/index.html")
+			return c.File("web/templates/index.html")
 		}
 		return c.JSON(http.StatusOK, map[string]interface{}{
 			"IsAuthorized": true,
@@ -82,13 +82,13 @@ func main() {
 		})
 	})
 	e.GET("/", func(c echo.Context) error {
-		return c.File("templates/index.html")
+		return c.File("web/templates/index.html")
 	})
 	e.GET("/login-page", func(c echo.Context) error {
-		return c.File("templates/loginpage.html")
+		return c.File("web/templates/loginpage.html")
 	})
 	e.GET("/register-page", func(c echo.Context) error {
-		return c.File("templates/registerpage.html")
+		return c.File("web/templates/registerpage.html")
 	})
 
 	e.POST("/login", authHandler.Login)

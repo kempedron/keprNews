@@ -35,7 +35,7 @@ func main() {
 	}
 	e := echo.New()
 
-	templates := template.Must(template.ParseGlob("templates/*.html"))
+	templates := template.Must(template.ParseGlob("web/templates/*.html"))
 	e.Renderer = &TemplateRegistry{
 		templates: templates,
 	}

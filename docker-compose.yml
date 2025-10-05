@@ -15,15 +15,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    environment:
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_USER=dbUser
-      - DB_PASSWORD=123456
-      - DB_NAME=auth_db  # Для изоляции данных можно использовать отдельную БД
-      - REDIS_URL=redis://:123456@redis:6379
-      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
-      - PORT=8081
     restart: always
     networks:
       - news-network
@@ -42,15 +33,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    environment:
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_USER=dbUser
-      - DB_PASSWORD=123456
-      - DB_NAME=article_db  # Для изоляции данных можно использовать отдельную БД
-      - REDIS_URL=redis://:123456@redis:6379
-      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
-      - PORT=8082
     restart: always
     networks:
       - news-network
@@ -67,11 +49,6 @@ services:
     depends_on:
       - auth-service
       - article-service
-    environment:
-      - AUTH_SERVICE_URL=http://auth-service:8081
-      - ARTICLE_SERVICE_URL=http://article-service:8082
-      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
-      - PORT=8080
     restart: always
     networks:
       - news-network
@@ -83,9 +60,11 @@ services:
       - pgdata:/var/lib/postgresql/data
       - ./init-scripts:/docker-entrypoint-initdb.d  # Скрипты для создания нескольких БД
     environment:
-      POSTGRES_MULTIPLE_DATABASES: auth_db,article_db
+      POSTGRES_PASSWORD: 123456  # Установите надежный пароль
+      POSTGRES_DB: auth_db  # Опционально: имя БД
       POSTGRES_USER: dbUser
-      POSTGRES_PASSWORD: 123456
+    env_file:
+      - .env
     ports:
       - "5432:5432"
     restart: always
@@ -104,9 +83,8 @@ services:
     restart: always
     ports:
       - "6379:6379"
-    environment:
-      - REDIS_PASSWORD=123456
-      - REDIS_APPENDONLY=yes
+    env_file:
+      - .env
     volumes:
       - redis_data:/data
     networks:

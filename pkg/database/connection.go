@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -73,16 +74,18 @@ func InitDB() error {
 }
 
 func InitRedis() error {
-	redisHost := os.Getenv("REDIS_HOST")
-	redisPort := os.Getenv("REDIS_PORT")
+	if err := godotenv.Load("/root/.env"); err != nil {
+		log.Println("No .env file found, using system environment variables")
+	}
+	redisURL := os.Getenv("REDIS_URL")
+	log.Println(redisURL)
 
 	redisClient = redis.NewClient(&redis.Options{
-		Addr:     redisHost + ":" + redisPort,
-		Password: "", // если нет пароля
-		DB:       0,  // используем базу по умолчанию
+		Addr:     redisURL,
+		Password: "",
+		DB:       0,
 	})
 
-	// Проверяем подключение
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := redisClient.Ping(ctx).Err(); err != nil {

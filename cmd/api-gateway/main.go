@@ -105,7 +105,7 @@ func main() {
 		Port:              config.GetEnv("PORT", "8080"),
 		AuthServiceURL:    config.GetEnv("AUTH_SERVICE_URL", "http://auth-service:8081"),
 		ArticleServiceURL: config.GetEnv("ARTICLE_SERVICE_URL", "http://article-service:8082"),
-		RedisURL:          config.GetEnv("REDIS_URL", "redis://redis:6379"),
+		RedisURL:          config.GetEnv("REDIS_URL", "redis:6379"),
 		JWTSecret:         config.GetEnv("JWT_SECRET", ""),
 	}
 	if cfg.JWTSecret == "" {

@@ -11,8 +11,6 @@ FROM alpine:latest
 RUN apk --no-cache add ca-certificates
 WORKDIR /root/
 COPY --from=builder /app/article-service .
-
+COPY --from=builder /app/.env .
 COPY --from=builder /app/web/templates ./web/templates
-
-EXPOSE 8082
 CMD ["./article-service"]  
