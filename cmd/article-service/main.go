@@ -7,6 +7,7 @@ import (
 	"net/http"
 	articleHandler "news/internal/article/handler"
 	"news/pkg/database"
+	"os"
 
 	"news/pkg/middleware"
 
@@ -35,7 +36,17 @@ func main() {
 	}
 	e := echo.New()
 
-	templates := template.Must(template.ParseGlob("web/templates/*.html"))
+	templatePath := os.Getenv("TEMPLATE_PATH")
+	if templatePath == "" {
+		templatePath = "/root/web/templates/"
+	}
+
+	if _, err := os.Stat(templatePath); os.IsNotExist(err) {
+		log.Fatalf("Директория с шаблонами не найдена: %s", templatePath)
+	}
+
+	templatePath = "./web/templates/"
+	templates := template.Must(template.ParseGlob(templatePath + "*.html"))
 	e.Renderer = &TemplateRegistry{
 		templates: templates,
 	}
@@ -68,16 +79,16 @@ func main() {
 	protected := e.Group("")
 	protected.Use(middleware.JWTAuth)
 	protected.Use(middleware.ReqPerSecLimitMiddleware(5))
-	protected.GET("/popular-news", articleHandler.AllArticle)
+	e.GET("/popular-news", articleHandler.AllArticle)
 	protected.GET("/add-article-page", func(c echo.Context) error {
-		return c.File("templates/addArticle.html")
+		return c.File("/root/web/templates/addArticle.html")
 	})
-	protected.POST("/add-article", articleHandler.AddArticle)
+	e.POST("/add-article", articleHandler.AddArticle)
 	protected.GET("/article/:article_id", articleHandler.GetArticle)
 	protected.POST("/article/delete/:article_id", articleHandler.DeleteArticle)
 	protected.GET("/article/search", articleHandler.SearchArticles)
 	protected.GET("/search", func(c echo.Context) error {
-		return c.File("templates/search.html")
+		return c.File("/root/web/templates/search.html")
 	})
 	e.Logger.Fatal(e.Start("0.0.0.0:8080"))
 

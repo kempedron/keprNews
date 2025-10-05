@@ -5,11 +5,11 @@ services:
   auth-service:
     build: 
       context: .
-      dockerfile: ./cmd/auth-service/Dockerfile  # Путь к Dockerfile сервиса аутентификации
+      dockerfile: ./cmd/auth-service/Dockerfile  
     env_file: 
     - .env
     ports:
-      - "8081:8081"  # Пробрасываем порт для доступа к auth-service
+      - "8081:8080"  
     depends_on:
       db:
         condition: service_healthy
@@ -23,11 +23,11 @@ services:
   article-service:
     build: 
       context: .
-      dockerfile: ./cmd/article-service/Dockerfile  # Путь к Dockerfile сервиса статей
+      dockerfile: ./cmd/article-service/Dockerfile  
     env_file: 
     - .env
     ports:
-      - "8082:8082"  # Пробрасываем порт для доступа к article-service
+      - "8082:8080"  
     depends_on:
       db:
         condition: service_healthy
@@ -58,20 +58,18 @@ services:
     image: postgres:14-alpine
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./init-scripts:/docker-entrypoint-initdb.d  # Скрипты для создания нескольких БД
+      - ./init-scripts:/docker-entrypoint-initdb.d  
     environment:
-      POSTGRES_PASSWORD: 123456  # Установите надежный пароль
-      POSTGRES_DB: auth_db  # Опционально: имя БД
+      POSTGRES_PASSWORD: 123456  
+      POSTGRES_DB: auth_db  
       POSTGRES_USER: dbUser
-    env_file:
-      - .env
     ports:
       - "5432:5432"
     restart: always
     networks:
       - news-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U dbUser"]
+      test: ["CMD-SHELL", "pg_isready -U dbUser -d auth_db"]
       interval: 5s
       timeout: 5s
       retries: 10

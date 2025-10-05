@@ -62,18 +62,43 @@ func (g *APIGateway) setMiddleware() {
 }
 
 func (g *APIGateway) setRoutes() {
-	public := g.echo.Group("/api")
-	public.POST("/auth/register", g.proxyToAuthService)
-	public.POST("/auth/login", g.proxyToAuthService)
-	public.POST("/articles/:id", g.proxyToArticleService)
+	// Статические страницы
+	g.echo.GET("/", g.proxyToAuthService)
 
-	protected := g.echo.Group("/api")
+	// Группа страниц аутентификации
+	authPages := g.echo.Group("")
+	authPages.GET("/login-page", g.proxyToAuthService)
+	authPages.GET("/register-page", g.proxyToAuthService)
+
+	// Группа страниц статей
+	articlePages := g.echo.Group("")
+	articlePages.GET("/add-article-page", g.proxyToArticleService)
+	articlePages.GET("/search", g.proxyToArticleService)
+	articlePages.GET("/article/:article_id", g.proxyToArticleService)
+
+	// Public API routes - ДОБАВЬ ЭТИ МАРШРУТЫ
+	public := g.echo.Group("")
+	public.POST("/login", g.proxyToAuthService)
+	public.POST("/register", g.proxyToAuthService)
+	public.GET("/get-info/user-info", g.proxyToAuthService)
+	public.GET("/popular-news", g.proxyToArticleService)
+
+	// API routes с префиксом /api
+	api := g.echo.Group("/api")
+	api.POST("/auth/register", g.proxyToAuthService)
+	api.POST("/auth/login", g.proxyToAuthService)
+	api.GET("/auth/login", g.proxyToAuthService)
+
+	// Protected API routes
+	protected := api.Group("")
 	protected.Use(myMiddleware.JWTAuth)
 	protected.POST("/articles", g.proxyToArticleService)
 	protected.PUT("/articles/:id", g.proxyToArticleService)
 	protected.DELETE("/articles/:id", g.proxyToArticleService)
-
+	protected.GET("/popular-news", g.proxyToArticleService)
+	protected.GET("/article/search", g.proxyToArticleService)
 }
+
 func (g *APIGateway) proxyToArticleService(c echo.Context) error {
 	return g.proxyToService("article")(c)
 }
@@ -84,8 +109,10 @@ func (g *APIGateway) proxyToAuthService(c echo.Context) error {
 
 func (g *APIGateway) proxyToService(serviceName string) echo.HandlerFunc {
 	return func(c echo.Context) error {
+		log.Printf("Проксирование запроса к сервису: %s", serviceName) // Добавьте это
 		service, exists := g.services[serviceName]
 		if !exists {
+			log.Printf("Сервис %s не найден", serviceName) // И это
 			return c.JSON(http.StatusInternalServerError, map[string]string{
 				"error": "Service unavailable",
 			})
@@ -103,11 +130,12 @@ func (g *APIGateway) proxyToService(serviceName string) echo.HandlerFunc {
 func main() {
 	cfg := &Config{
 		Port:              config.GetEnv("PORT", "8080"),
-		AuthServiceURL:    config.GetEnv("AUTH_SERVICE_URL", "http://auth-service:8081"),
-		ArticleServiceURL: config.GetEnv("ARTICLE_SERVICE_URL", "http://article-service:8082"),
+		AuthServiceURL:    config.GetEnv("AUTH_SERVICE_URL", "http://auth-service:8080"),
+		ArticleServiceURL: config.GetEnv("ARTICLE_SERVICE_URL", "http://article-service:8080"),
 		RedisURL:          config.GetEnv("REDIS_URL", "redis:6379"),
 		JWTSecret:         config.GetEnv("JWT_SECRET", ""),
 	}
+
 	if cfg.JWTSecret == "" {
 		log.Fatal("JWT_SECRET environment variable is required")
 	}

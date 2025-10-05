@@ -7,6 +7,7 @@ import (
 	"net/http"
 	authHandler "news/internal/auth/handler"
 	"news/pkg/database"
+	"os"
 
 	"news/pkg/middleware"
 	"news/pkg/models"
@@ -36,7 +37,17 @@ func main() {
 	}
 	e := echo.New()
 
-	templates := template.Must(template.ParseGlob("web/templates/*.html"))
+	templatePath := os.Getenv("TEMPLATE_PATH")
+	if templatePath == "" {
+		templatePath = "/root/web/templates/"
+	}
+
+	if _, err := os.Stat(templatePath); os.IsNotExist(err) {
+		log.Fatalf("Директория с шаблонами не найдена: %s", templatePath)
+	}
+
+	templatePath = "./web/templates/"
+	templates := template.Must(template.ParseGlob(templatePath + "*.html"))
 	e.Renderer = &TemplateRegistry{
 		templates: templates,
 	}
@@ -74,21 +85,22 @@ func main() {
 		}
 		var user models.User
 		if err := database.DB.First(&user, userID).Error; err != nil {
-			return c.File("web/templates/index.html")
+			return c.File("/root/web/templates/index.html")
 		}
 		return c.JSON(http.StatusOK, map[string]interface{}{
 			"IsAuthorized": true,
 			"Username":     user.Username,
 		})
 	})
+
 	e.GET("/", func(c echo.Context) error {
-		return c.File("web/templates/index.html")
+		return c.File("/root/web/templates/index.html")
 	})
 	e.GET("/login-page", func(c echo.Context) error {
-		return c.File("web/templates/loginpage.html")
+		return c.File("/root/web/templates/loginpage.html")
 	})
 	e.GET("/register-page", func(c echo.Context) error {
-		return c.File("web/templates/registerpage.html")
+		return c.File("/root/web/templates/registerpage.html")
 	})
 
 	e.POST("/login", authHandler.Login)

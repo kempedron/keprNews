@@ -128,21 +128,22 @@ func AddArticle(c echo.Context) error {
 }
 
 func AllArticle(c echo.Context) error {
-	articles, err := service.GetArticlesWithDetails(database.DB)
-	if err != nil {
-		log.Printf("error get articles from DB: %s", err)
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "error in get articles from DB"})
-	}
-	userID := c.Get("userID") // Ваша функция для получения ID пользователя
-	var currentUser models.User
-	if userID != 0 {
-		database.DB.First(&currentUser, userID)
-	}
-	currentUsername := currentUser.Username
-	return c.Render(http.StatusOK, "allArticle.html", map[string]interface{}{
-		"articles":        articles,
-		"currentUsername": currentUsername,
-	})
+	// articles, err := service.GetArticlesWithDetails(database.DB)
+	// if err != nil {
+	// 	log.Printf("error get articles from DB: %s", err)
+	// 	return c.JSON(http.StatusInternalServerError, map[string]string{"error": "error in get articles from DB"})
+	// }
+	// userID := c.Get("userID") // Ваша функция для получения ID пользователя
+	// var currentUser models.User
+	// if userID != 0 {
+	// 	database.DB.First(&currentUser, userID)
+	// }
+	// currentUsername := currentUser.Username
+	// return c.Render(http.StatusOK, "allArticle.html", map[string]interface{}{
+	// 	"articles":        articles,
+	// 	"currentUsername": currentUsername,
+	// })
+	return c.String(http.StatusOK, "322")
 }
 
 func GetArticle(c echo.Context) error {
