@@ -43,31 +43,29 @@ func InitDB() error {
 		log.Printf("error migrate DB: %s", err)
 		panic(err)
 	}
-	// Добавляем поле для полнотекстового поиска (если еще не существует)
-	err = DB.Exec(`
-        ALTER TABLE articles 
+	if err := createIndexForDB(); err != nil {
+		log.Printf("error creating indexes: %s", err)
+		return err
+	}
+	return nil
+}
+
+func createIndexForDB() error {
+	indexes := []string{
+		`ALTER TABLE articles 
         ADD COLUMN IF NOT EXISTS search_vector tsvector GENERATED ALWAYS AS (
             setweight(to_tsvector('russian', coalesce(article_title, '')), 'A') ||
             setweight(to_tsvector('russian', coalesce(article_content, '')), 'B')
-        ) STORED
-    `).Error
-	if err != nil {
-		// не обрываем, т.к возможно столбец уже существует
-		log.Printf("Ошибка при добавлении search_vector: %v", err)
+        ) STORED`,
+		`CREATE INDEX IF NOT EXISTS idx_articles_search_vector ON articles USING gin(search_vector`,
+		`CREATE INDEX IF NOT EXISTS idx_tags_content ON tags USING gin(to_tsvector('russian', tag_content))`,
+		`CREATE INDEX IF NOT EXISTS idx_articles_id_desc ON articles(id DESC)`,
+		`CREATE INDEX IF NOT EXISTS idx_articles_author_id ON articles(author_id);`,
 	}
-
-	// Создаем индекс GIN для быстрого поиска (если еще не существует)
-	err = DB.Exec("CREATE INDEX IF NOT EXISTS idx_articles_search_vector ON articles USING gin(search_vector)").Error
-	if err != nil {
-		log.Printf("Ошибка при создании индекса для search_vector: %v", err)
-		return err
-	}
-
-	// Создаем индекс для поиска по тегам (если еще не существует)
-	err = DB.Exec("CREATE INDEX IF NOT EXISTS idx_tags_content ON tags USING gin(to_tsvector('russian', tag_content))").Error
-	if err != nil {
-		log.Printf("Ошибка при создании индекса для тегов: %v", err)
-		return err
+	for _, sql := range indexes {
+		if err := DB.Exec(sql).Error; err != nil {
+			log.Printf("error creating index: %s", err)
+		}
 	}
 	return nil
 }

@@ -137,7 +137,11 @@ func AllArticle(c echo.Context) error {
 		log.Printf("error get articles from DB: %s", err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "error in get articles from DB"})
 	}
-	userID := c.Get("userID")
+	userID, err := middleware.GetUserIDFromToken(c)
+	if err != nil {
+		log.Printf("error get userID from token: %s", err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "error get userID from token"})
+	}
 	var currentUser models.User
 	if userID != 0 {
 		database.DB.First(&currentUser, userID)
@@ -148,7 +152,6 @@ func AllArticle(c echo.Context) error {
 		"articles":        articles,
 		"currentUsername": currentUsername,
 	})
-	//return c.String(http.StatusOK, "322")
 }
 
 func GetArticle(c echo.Context) error {
@@ -197,9 +200,10 @@ func DeleteArticle(c echo.Context) error {
 		log.Printf("errror parse articleID -> uint: %s", err)
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Неверный формат ID статьи"})
 	}
-	userID, ok := c.Get("userID").(uint)
-	if !ok {
-		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Требуется авторизация"})
+	userID, err := middleware.GetUserIDFromToken(c)
+	if err != nil {
+		log.Printf("error getting userID from token %s", err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "ошибка на стороне сервера"})
 	}
 	var article models.Article
 	result := database.DB.Preload("Author").First(&article, articleID)
@@ -260,10 +264,15 @@ func SearchArticles(c echo.Context) error {
 			"error": "Ошибка при поиске статей",
 		})
 	}
-	userID := c.Get("userID") // Ваша функция для получения ID пользователя
+	userID, err := middleware.GetUserIDFromToken(c)
+	if err != nil {
+		log.Printf("error getting userID from token: %s", err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"errro": "ошибка на стороне сервера"})
+	}
 	var currentUser models.User
-	if userID != 0 {
-		database.DB.First(&currentUser, userID)
+	if err := database.DB.Select("username").First(&currentUser, userID).Error; err != nil {
+		log.Panicf("err getting user from DB: %s", err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "ошибка на стороне сервера"})
 	}
 	currentUsername := currentUser.Username
 

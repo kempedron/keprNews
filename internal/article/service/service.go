@@ -11,7 +11,19 @@ import (
 
 func GetArticlesWithDetails(db *gorm.DB) ([]models.Article, error) {
 	var articles []models.Article
-	err := db.Preload("Author").Preload("Tags").Order("RANDOM()").Limit(10).Find(&articles).Error
+
+	err := db.
+		Select("articles.id, articles.article_title, articles.article_content, articles.author_id, articles.created_at").
+		Preload("Author", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id, username")
+		}).
+		Preload("Tags", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id, tag_content")
+		}).
+		Order("id DESC").
+		Limit(10).
+		Find(&articles).Error
+
 	if err != nil {
 		return nil, err
 	}

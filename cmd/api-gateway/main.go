@@ -94,9 +94,9 @@ func (g *APIGateway) setRoutes() {
 	protected := g.echo.Group("")
 	protected.Use(myMiddleware.JWTAuth)
 	protected.POST("/add-article", g.proxyToArticleService)
+	protected.POST("/article/delete/:article_id", g.proxyToArticleService)
 	protected.POST("/articles", g.proxyToArticleService)
 	protected.PUT("/articles/:id", g.proxyToArticleService)
-	protected.DELETE("/articles/:id", g.proxyToArticleService)
 	protected.GET("/popular-news", g.proxyToArticleService)
 	protected.GET("/article/search", g.proxyToArticleService)
 }
@@ -119,19 +119,6 @@ func (g *APIGateway) proxyToService(serviceName string) echo.HandlerFunc {
 				"error": "Service unavailable",
 			})
 		}
-
-		// if serviceName == "article" {
-		// 	userID := c.Get("userID")
-		// 	username := c.Get("username")
-
-		// 	if userID != nil {
-		// 		c.Request().Header.Set("X-User-ID", fmt.Sprintf("%v", userID))
-		// 	}
-		// 	if username != nil {
-		// 		c.Request().Header.Set("X-Username", fmt.Sprintf("%v", username))
-		// 	}
-		// 	log.Printf("передача в заголовках: userID=%v, username=%v", userID, username)
-		// }
 
 		proxyMiddleware := echoMiddleware.ProxyWithConfig(echoMiddleware.ProxyConfig{
 			Balancer: service.proxy,
