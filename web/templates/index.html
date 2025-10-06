@@ -454,14 +454,8 @@
         const AUTH_CHECK_DELAY = 5000; // 5 секунд между проверками
 
         // Основная функция проверки авторизации
+        // Улучшенная функция проверки авторизации
         async function checkAuth() {
-            // Защита от множественных одновременных запросов
-            if (authCheckInProgress) return;
-            if (Date.now() - lastAuthCheckTime < AUTH_CHECK_DELAY) return;
-            
-            authCheckInProgress = true;
-            lastAuthCheckTime = Date.now();
-            
             try {
                 const response = await fetch('/get-info/user-info', {
                     credentials: 'include',
@@ -475,18 +469,43 @@
                     const userData = await response.json();
                     if (userData.IsAuthorized) {
                         showUserInfo(userData.Username);
+                        // ДОБАВЬТЕ: обновляем интерфейс после входа
+                        updateUIForLoggedInUser();
                     } else {
                         showGuestButtons();
+                        updateUIForGuest();
                     }
                 } else {
                     showGuestButtons();
+                    updateUIForGuest();
                 }
             } catch (error) {
                 console.error('Ошибка при проверке авторизации:', error);
                 showGuestButtons();
-            } finally {
-                authCheckInProgress = false;
+                updateUIForGuest();
             }
+        }
+
+        // Новая функция для обновления интерфейса после входа
+        function updateUIForLoggedInUser() {
+            // Скрываем элементы для неавторизованных пользователей
+            const guestElements = document.querySelectorAll('[data-guest-only]');
+            guestElements.forEach(el => el.style.display = 'none');
+            
+            // Показываем элементы для авторизованных пользователей
+            const authElements = document.querySelectorAll('[data-auth-only]');
+            authElements.forEach(el => el.style.display = 'block');
+        }
+
+        // Функция для обновления интерфейса для гостей
+        function updateUIForGuest() {
+            // Показываем элементы для неавторизованных пользователей
+            const guestElements = document.querySelectorAll('[data-guest-only]');
+            guestElements.forEach(el => el.style.display = 'block');
+            
+            // Скрываем элементы для авторизованных пользователей
+            const authElements = document.querySelectorAll('[data-auth-only]');
+            authElements.forEach(el => el.style.display = 'none');
         }
 
         // Функция для отображения информации о пользователе
@@ -525,25 +544,35 @@
         }
 
         // Функция для выхода
-        async function logout() {
+        // Функция для выхода
+        async function logout(event) {
+            if (event) {
+                event.preventDefault(); // Предотвращаем переход по ссылке
+            }
+            
             try {
                 const response = await fetch('/logout', {
                     method: 'POST',
-                    credentials: 'include'
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
                 });
                 
                 if (response.ok) {
-                    // Показываем кнопки для гостей и обновляем страницу
+                    // Успешный выход - показываем кнопки для гостей
                     showGuestButtons();
+                    // Обновляем страницу через короткое время
                     setTimeout(() => {
-                        window.location.reload();
-                    }, 100);
+                        window.location.href = '/'; // Редирект на главную
+                    }, 500);
                 } else {
-                    alert('Ошибка при выходе');
+                    console.error('Ошибка при выходе:', response.status);
+                    alert('Ошибка при выходе. Статус: ' + response.status);
                 }
             } catch (error) {
                 console.error('Ошибка при выходе:', error);
-                alert('Ошибка при выходе');
+                alert('Ошибка при выходе: ' + error.message);
             }
         }
 

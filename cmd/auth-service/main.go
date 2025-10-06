@@ -108,7 +108,6 @@ func main() {
 	e.POST("/logout", authHandler.Logout)
 	protected := e.Group("")
 	protected.Use(middleware.JWTAuth)
-	protected.Use(middleware.ReqPerSecLimitMiddleware(5))
 	e.Logger.Fatal(e.Start("0.0.0.0:8080"))
 
 }

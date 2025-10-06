@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"log"
 	"net/http"
 	"news/pkg/jwt"
 	"time"
@@ -30,6 +31,7 @@ func JWTAuth(next echo.HandlerFunc) echo.HandlerFunc {
 		}
 		c.Set("userID", claims.UserID)
 		c.Set("username", claims.Username)
+		log.Printf("userID form middleware:%d, username from middleware: %s", claims.UserID, claims.Username)
 		return next(c)
 	}
 }
@@ -39,9 +41,11 @@ func GetUserIDFromToken(c echo.Context) (uint, error) {
 	if err != nil {
 		return 0, err
 	}
+	log.Printf("coockie for jwt from func: %s", cookie)
 	token, err := jwt.ValidateToken(cookie.Value)
 	if err != nil {
 		return 0, err
 	}
+	log.Printf("userID from token: %d", token.UserID)
 	return token.UserID, nil
 }

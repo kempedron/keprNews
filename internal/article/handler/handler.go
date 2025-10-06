@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"news/internal/article/service"
 	"news/pkg/database"
+	"news/pkg/middleware"
 	"news/pkg/models"
 	"strconv"
 	"strings"
@@ -40,10 +41,13 @@ func AddArticle(c echo.Context) error {
 			"error": "Заголовок и содержание статьи обязательны",
 		})
 	}
-	userID, ok := c.Get("userID").(uint)
-	if !ok {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to get user ID from token"})
+	userID, err := middleware.GetUserIDFromToken(c)
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, map[string]string{
+			"error": "Authentication required: " + err.Error(),
+		})
 	}
+
 	tx := database.DB.Begin()
 	if tx.Error != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "ошибка начала транзакции"})
@@ -128,22 +132,23 @@ func AddArticle(c echo.Context) error {
 }
 
 func AllArticle(c echo.Context) error {
-	// articles, err := service.GetArticlesWithDetails(database.DB)
-	// if err != nil {
-	// 	log.Printf("error get articles from DB: %s", err)
-	// 	return c.JSON(http.StatusInternalServerError, map[string]string{"error": "error in get articles from DB"})
-	// }
-	// userID := c.Get("userID") // Ваша функция для получения ID пользователя
-	// var currentUser models.User
-	// if userID != 0 {
-	// 	database.DB.First(&currentUser, userID)
-	// }
-	// currentUsername := currentUser.Username
-	// return c.Render(http.StatusOK, "allArticle.html", map[string]interface{}{
-	// 	"articles":        articles,
-	// 	"currentUsername": currentUsername,
-	// })
-	return c.String(http.StatusOK, "322")
+	articles, err := service.GetArticlesWithDetails(database.DB)
+	if err != nil {
+		log.Printf("error get articles from DB: %s", err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "error in get articles from DB"})
+	}
+	userID := c.Get("userID")
+	var currentUser models.User
+	if userID != 0 {
+		database.DB.First(&currentUser, userID)
+	}
+	currentUsername := currentUser.Username
+	log.Printf("articles len: %v; currentUser:%v;", len(articles), currentUsername)
+	return c.Render(http.StatusOK, "allArticle.html", map[string]interface{}{
+		"articles":        articles,
+		"currentUsername": currentUsername,
+	})
+	//return c.String(http.StatusOK, "322")
 }
 
 func GetArticle(c echo.Context) error {

@@ -58,7 +58,6 @@ func (g *APIGateway) setMiddleware() {
 	g.echo.Use(echoMiddleware.CORS())
 	g.echo.Use(echoMiddleware.Gzip())
 
-	g.echo.Use(myMiddleware.ReqPerSecLimitMiddleware(5))
 }
 
 func (g *APIGateway) setRoutes() {
@@ -72,26 +71,29 @@ func (g *APIGateway) setRoutes() {
 
 	// Группа страниц статей
 	articlePages := g.echo.Group("")
+	articlePages.Use(myMiddleware.JWTAuth)
 	articlePages.GET("/add-article-page", g.proxyToArticleService)
 	articlePages.GET("/search", g.proxyToArticleService)
 	articlePages.GET("/article/:article_id", g.proxyToArticleService)
 
-	// Public API routes - ДОБАВЬ ЭТИ МАРШРУТЫ
+	// Public API routes
 	public := g.echo.Group("")
 	public.POST("/login", g.proxyToAuthService)
 	public.POST("/register", g.proxyToAuthService)
+	public.POST("/logout", g.proxyToAuthService)
 	public.GET("/get-info/user-info", g.proxyToAuthService)
 	public.GET("/popular-news", g.proxyToArticleService)
 
 	// API routes с префиксом /api
-	api := g.echo.Group("/api")
-	api.POST("/auth/register", g.proxyToAuthService)
-	api.POST("/auth/login", g.proxyToAuthService)
-	api.GET("/auth/login", g.proxyToAuthService)
+	// api := g.echo.Group("/api")
+	// api.POST("/auth/register", g.proxyToAuthService)
+	// api.POST("/auth/login", g.proxyToAuthService)
+	// api.GET("/auth/login", g.proxyToAuthService)
 
 	// Protected API routes
-	protected := api.Group("")
+	protected := g.echo.Group("")
 	protected.Use(myMiddleware.JWTAuth)
+	protected.POST("/add-article", g.proxyToArticleService)
 	protected.POST("/articles", g.proxyToArticleService)
 	protected.PUT("/articles/:id", g.proxyToArticleService)
 	protected.DELETE("/articles/:id", g.proxyToArticleService)
@@ -117,6 +119,19 @@ func (g *APIGateway) proxyToService(serviceName string) echo.HandlerFunc {
 				"error": "Service unavailable",
 			})
 		}
+
+		// if serviceName == "article" {
+		// 	userID := c.Get("userID")
+		// 	username := c.Get("username")
+
+		// 	if userID != nil {
+		// 		c.Request().Header.Set("X-User-ID", fmt.Sprintf("%v", userID))
+		// 	}
+		// 	if username != nil {
+		// 		c.Request().Header.Set("X-Username", fmt.Sprintf("%v", username))
+		// 	}
+		// 	log.Printf("передача в заголовках: userID=%v, username=%v", userID, username)
+		// }
 
 		proxyMiddleware := echoMiddleware.ProxyWithConfig(echoMiddleware.ProxyConfig{
 			Balancer: service.proxy,

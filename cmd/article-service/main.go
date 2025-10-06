@@ -77,8 +77,8 @@ func main() {
 		MaxAge: 86400,
 	}))
 	protected := e.Group("")
+	e.Use(middleware.CheckTimeForResp)
 	protected.Use(middleware.JWTAuth)
-	protected.Use(middleware.ReqPerSecLimitMiddleware(5))
 	e.GET("/popular-news", articleHandler.AllArticle)
 	protected.GET("/add-article-page", func(c echo.Context) error {
 		return c.File("/root/web/templates/addArticle.html")
