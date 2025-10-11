@@ -1,55 +1,94 @@
-version: '3.8'  # Обновите версию
+version: '3.8'
 
 services:
-  webapp:
-    build: .
+  # Сервис аутентификации
+  auth-service:
+    build: 
+      context: .
+      dockerfile: ./cmd/auth-service/Dockerfile  
+    env_file: 
+    - .env
     ports:
-      - "8080:8080"
+      - "8081:8080"  
     depends_on:
       db:
         condition: service_healthy
-      redis: # Добавляем зависимость от Redis
+      redis:
         condition: service_healthy
-    environment:
-      DB_HOST: db
-      DB_PORT: 5432
-      DB_USER: dbUser
-      DB_PASSWORD: 123456
-      DB_NAME: newDataBase
-      REDIS_HOST: redis # Хост внутри сети Docker Compose - это имя сервиса
-      REDIS_PORT: 6379
     restart: always
+    networks:
+      - news-network
+
+  # Сервис статей
+  article-service:
+    build: 
+      context: .
+      dockerfile: ./cmd/article-service/Dockerfile  
+    env_file: 
+    - .env
+    ports:
+      - "8082:8080"  
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: always
+    networks:
+      - news-network
+
+  # API Gateway - единая точка входа
+  api-gateway:
+    build:
+      context: .
+      dockerfile: ./cmd/api-gateway/Dockerfile
+    env_file: 
+    - .env
+    ports:
+      - "8080:8080"
+    depends_on:
+      - auth-service
+      - article-service
+    restart: always
+    networks:
+      - news-network
+
+  # База данных PostgreSQL
   db:
     image: postgres:14-alpine
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./create_db_and_user.sql:/docker-entrypoint-initdb.d/create_db_and_user.sql
+      - ./init-scripts:/docker-entrypoint-initdb.d  
     environment:
-      POSTGRES_DB: newDataBase
+      POSTGRES_PASSWORD: 123456  
+      POSTGRES_DB: auth_db  
       POSTGRES_USER: dbUser
-      POSTGRES_PASSWORD: 123456
     ports:
       - "5432:5432"
     restart: always
+    networks:
+      - news-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U dbUser -d newDataBase"]
+      test: ["CMD-SHELL", "pg_isready -U dbUser -d auth_db"]
       interval: 5s
       timeout: 5s
       retries: 10
 
+  # Redis для кеширования
   redis:
-    image: redis:7.4-alpine # Используется стабильный Alpine-образ
+    image: redis:7.4-alpine
     container_name: redis
     restart: always
     ports:
       - "6379:6379"
-    environment:
-      - REDIS_PASSWORD=123456 # Установка пароля для подключения
-      - REDIS_APPENDONLY=yes   # Включение持久化 для сохранения данных на диск:cite[5]
+    env_file:
+      - .env
     volumes:
-      - redis_data:/data # Сохранение данных Redis на хост-машине
-    healthcheck: # Проверка здоровья контейнера
-      test: ["CMD", "redis-cli", "--raw", "ping"]
+      - redis_data:/data
+    networks:
+      - news-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "123456", "ping"]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -57,3 +96,7 @@ services:
 volumes:
   pgdata:
   redis_data:
+
+networks:
+  news-network:
+    driver: bridge

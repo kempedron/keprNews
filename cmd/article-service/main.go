@@ -5,10 +5,11 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"news/internal/database"
-	"news/internal/handler"
-	"news/internal/middleware"
-	"news/internal/models"
+	articleHandler "news/internal/article/handler"
+	"news/pkg/database"
+	"os"
+
+	"news/pkg/middleware"
 
 	echo "github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
@@ -35,7 +36,17 @@ func main() {
 	}
 	e := echo.New()
 
-	templates := template.Must(template.ParseGlob("templates/*.html"))
+	templatePath := os.Getenv("TEMPLATE_PATH")
+	if templatePath == "" {
+		templatePath = "/root/web/templates/"
+	}
+
+	if _, err := os.Stat(templatePath); os.IsNotExist(err) {
+		log.Fatalf("Директория с шаблонами не найдена: %s", templatePath)
+	}
+
+	templatePath = "./web/templates/"
+	templates := template.Must(template.ParseGlob(templatePath + "*.html"))
 	e.Renderer = &TemplateRegistry{
 		templates: templates,
 	}
@@ -65,49 +76,19 @@ func main() {
 		},
 		MaxAge: 86400,
 	}))
-
-	e.GET("/get-info/user-info", func(c echo.Context) error {
-		userID, err := middleware.GetUserIDFromToken(c)
-		if err != nil {
-			return c.File("templates/index.html")
-		}
-		var user models.User
-		if err := database.DB.First(&user, userID).Error; err != nil {
-			return c.File("templates/index.html")
-		}
-		return c.JSON(http.StatusOK, map[string]interface{}{
-			"IsAuthorized": true,
-			"Username":     user.Username,
-		})
-	})
-	e.GET("/", func(c echo.Context) error {
-		return c.File("templates/index.html")
-	})
-	e.GET("/login-page", func(c echo.Context) error {
-		return c.File("templates/loginpage.html")
-	})
-	e.GET("/register-page", func(c echo.Context) error {
-		return c.File("templates/registerpage.html")
-	})
-	e.GET("/test", func(c echo.Context) error {
-		return c.String(http.StatusOK, "все работает")
-	})
-	e.POST("/login", handler.Login)
-	e.POST("/register", handler.Register)
-	e.POST("/logout", handler.Logout)
 	protected := e.Group("")
+	e.Use(middleware.CheckTimeForResp)
 	protected.Use(middleware.JWTAuth)
-	protected.Use(middleware.ReqPerSecLimitMiddleware(5))
-	protected.GET("/popular-news", handler.AllArticle)
+	e.GET("/popular-news", articleHandler.AllArticle)
 	protected.GET("/add-article-page", func(c echo.Context) error {
-		return c.File("templates/addArticle.html")
+		return c.File("/root/web/templates/addArticle.html")
 	})
-	protected.POST("/add-article", handler.AddArticle)
-	protected.GET("/article/:article_id", handler.GetArticle)
-	protected.POST("/article/delete/:article_id", handler.DeleteArticle)
-	protected.GET("/article/search", handler.SearchArticles)
+	e.POST("/add-article", articleHandler.AddArticle)
+	protected.GET("/article/:article_id", articleHandler.GetArticle)
+	protected.POST("/article/delete/:article_id", articleHandler.DeleteArticle)
+	protected.GET("/article/search", articleHandler.SearchArticles)
 	protected.GET("/search", func(c echo.Context) error {
-		return c.File("templates/search.html")
+		return c.File("/root/web/templates/search.html")
 	})
 	e.Logger.Fatal(e.Start("0.0.0.0:8080"))
 

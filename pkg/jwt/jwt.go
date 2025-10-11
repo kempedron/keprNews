@@ -2,7 +2,7 @@ package jwt
 
 import (
 	"errors"
-	"news/internal/config"
+	"news/pkg/config"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -10,7 +10,7 @@ import (
 
 var (
 	ErrInvalidToken = errors.New("invalid token")
-	secretKey       = []byte(config.JwtSecretKey)
+	secretKey       = []byte(config.LoadConfig().JWTSecret)
 )
 
 type Claims struct {
