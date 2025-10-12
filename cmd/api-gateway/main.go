@@ -84,12 +84,6 @@ func (g *APIGateway) setRoutes() {
 	public.GET("/get-info/user-info", g.proxyToAuthService)
 	public.GET("/popular-news", g.proxyToArticleService)
 
-	// API routes с префиксом /api
-	// api := g.echo.Group("/api")
-	// api.POST("/auth/register", g.proxyToAuthService)
-	// api.POST("/auth/login", g.proxyToAuthService)
-	// api.GET("/auth/login", g.proxyToAuthService)
-
 	// Protected API routes
 	protected := g.echo.Group("")
 	protected.Use(myMiddleware.JWTAuth)

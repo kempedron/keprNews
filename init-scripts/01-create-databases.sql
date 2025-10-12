@@ -1,7 +1,7 @@
 -- Создаем базу данных для auth-service
 CREATE DATABASE auth_db;
 
--- Создаем базу данных для article-service (если нужна отдельная)
+-- Создаем базу данных для article-service
 CREATE DATABASE article_db;
 
 -- Предоставляем права пользователю dbUser
