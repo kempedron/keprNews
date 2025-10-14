@@ -12,6 +12,7 @@ import (
 	"news/pkg/middleware"
 	"news/pkg/models"
 
+	"github.com/labstack/echo-contrib/echoprometheus"
 	echo "github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
 )
@@ -36,6 +37,9 @@ func main() {
 		log.Fatal(err)
 	}
 	e := echo.New()
+
+	e.Use(echoprometheus.NewMiddleware("auth_service"))
+	e.GET("/metrics", echoprometheus.NewHandler())
 
 	templatePath := os.Getenv("TEMPLATE_PATH")
 	if templatePath == "" {
@@ -92,6 +96,9 @@ func main() {
 			"Username":     user.Username,
 		})
 	})
+	e.GET("/health", func(c echo.Context) error {
+		return c.JSON(200, map[string]string{"status": "healthy"})
+	})
 
 	e.GET("/", func(c echo.Context) error {
 		return c.File("/root/web/templates/index.html")
@@ -108,6 +115,14 @@ func main() {
 	e.POST("/logout", authHandler.Logout)
 	protected := e.Group("")
 	protected.Use(middleware.JWTAuth)
+	go func() {
+		metrics := echo.New()
+		metrics.GET("/metrics", echoprometheus.NewHandler())
+		if err := metrics.Start(":8081"); err != nil {
+			log.Printf("Metrics server error: %v", err)
+		}
+	}()
+
 	e.Logger.Fatal(e.Start("0.0.0.0:8080"))
 
 }

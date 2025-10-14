@@ -272,7 +272,9 @@ func SearchArticles(c echo.Context) error {
 	var currentUser models.User
 	if err := database.DB.Select("username").First(&currentUser, userID).Error; err != nil {
 		log.Panicf("err getting user from DB: %s", err)
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "ошибка на стороне сервера"})
+		return c.JSON(http.StatusNotFound, map[string]string{
+			"error": "User not found",
+		})
 	}
 	currentUsername := currentUser.Username
 

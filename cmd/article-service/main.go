@@ -11,6 +11,7 @@ import (
 
 	"news/pkg/middleware"
 
+	"github.com/labstack/echo-contrib/echoprometheus"
 	echo "github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
 )
@@ -36,6 +37,11 @@ func main() {
 	}
 	e := echo.New()
 
+	e.Use(echoprometheus.NewMiddleware("article_service"))
+	e.GET("/metrics", echoprometheus.NewHandler())
+	e.GET("/health", func(c echo.Context) error {
+		return c.JSON(200, map[string]string{"status": "healthy"})
+	})
 	templatePath := os.Getenv("TEMPLATE_PATH")
 	if templatePath == "" {
 		templatePath = "/root/web/templates/"
@@ -90,6 +96,14 @@ func main() {
 	protected.GET("/search", func(c echo.Context) error {
 		return c.File("/root/web/templates/search.html")
 	})
+	go func() {
+		metrics := echo.New()
+		metrics.GET("/metrics", echoprometheus.NewHandler())
+		if err := metrics.Start(":8081"); err != nil {
+			log.Printf("Metrics server error: %v", err)
+		}
+	}()
+
 	e.Logger.Fatal(e.Start("0.0.0.0:8080"))
 
 }

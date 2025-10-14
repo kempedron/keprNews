@@ -8,6 +8,7 @@ import (
 	"news/pkg/config"
 	myMiddleware "news/pkg/middleware"
 
+	"github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/labstack/echo/v4"
 	echoMiddleware "github.com/labstack/echo/v4/middleware"
 	"github.com/redis/go-redis/v9"
@@ -138,6 +139,13 @@ func main() {
 	gateway := NewAPIGateway(cfg)
 
 	defer gateway.echo.Close()
+	go func() {
+		metrics := echo.New()
+		metrics.GET("/metrics", echoprometheus.NewHandler())
+		if err := metrics.Start(":8081"); err != nil {
+			log.Printf("Metrics server error: %v", err)
+		}
+	}()
 
 	log.Printf("API Gateway start on port %s", cfg.Port)
 	if err := gateway.echo.Start(":" + cfg.Port); err != nil {
@@ -148,6 +156,12 @@ func main() {
 
 func NewAPIGateway(cfg *Config) *APIGateway {
 	e := echo.New()
+
+	e.Use((echoprometheus.NewMiddleware("api_gateway"))) // Собирает метрики
+	e.GET("/metrics", echoprometheus.NewHandler())
+	e.GET("/health", func(c echo.Context) error {
+		return c.JSON(200, map[string]string{"status": "healthy"})
+	})
 	redisOpts, err := redis.ParseURL(cfg.RedisURL)
 	if err != nil {
 		log.Fatal("Failed to parse redis url:", err)
