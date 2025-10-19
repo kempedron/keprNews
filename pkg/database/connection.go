@@ -17,7 +17,7 @@ import (
 
 var DB *gorm.DB
 
-var redisClient *redis.Client
+var RedisClient *redis.Client
 
 func InitDB() error {
 	var err error
@@ -77,7 +77,7 @@ func InitRedis() error {
 	redisURL := os.Getenv("REDIS_URL")
 	log.Println(redisURL)
 
-	redisClient = redis.NewClient(&redis.Options{
+	RedisClient = redis.NewClient(&redis.Options{
 		Addr:     redisURL,
 		Password: "",
 		DB:       0,
@@ -85,7 +85,7 @@ func InitRedis() error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	if err := redisClient.Ping(ctx).Err(); err != nil {
+	if err := RedisClient.Ping(ctx).Err(); err != nil {
 		log.Fatalf("Failed to connect to Redis: %v", err)
 		return err
 	}

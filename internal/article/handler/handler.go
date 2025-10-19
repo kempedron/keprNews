@@ -2,9 +2,8 @@ package handler
 
 import (
 	"context"
-	"encoding/json"
+	"fmt"
 	"log"
-	"math/rand"
 	"net/http"
 	"news/internal/article/service"
 	"news/pkg/database"
@@ -12,13 +11,9 @@ import (
 	"news/pkg/models"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/labstack/echo/v4"
-	"github.com/redis/go-redis/v9"
 )
-
-var redisClient *redis.Client
 
 func AddArticle(c echo.Context) error {
 	type ArticleRequest struct {
@@ -124,6 +119,13 @@ func AddArticle(c echo.Context) error {
 	if err := database.DB.Preload("Tags").First(&article, article.ID).Error; err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "ошибка при загрузке статьи"})
 	}
+	ctx := context.Background()
+	cacheKey := fmt.Sprintf("article:%d", article.ID)
+	if err := database.RedisClient.Del(ctx, cacheKey).Err(); err != nil {
+		log.Printf("failed to invalidate cache: %v", err)
+	} else {
+		log.Printf("Cache invalidated article")
+	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"message": "статья успешно создана",
@@ -161,33 +163,12 @@ func GetArticle(c echo.Context) error {
 		log.Printf("error parse articleID -> uint: %s", err)
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Неверный формат ID статьи"})
 	}
-	cacheKey := "article:" + articleID
-	cachedData, err := redisClient.Get(c.Request().Context(), cacheKey).Result()
-	if err == nil {
-		// Кеш найден, возвращаем данные
-		var article models.Article
-		json.Unmarshal([]byte(cachedData), &article)
-		return c.JSON(http.StatusOK, article)
-	}
 
-	article, err := service.GetArticleByIDFromDB(database.DB, articleIDUint)
+	article, err := service.GetArticleByID(database.DB, articleIDUint)
 	if err != nil {
 		log.Printf("error in getting article by ID: %s", err)
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ошибка на стороне сервера"})
 	}
-
-	go func(art models.Article) {
-		serialized, err := json.Marshal(art)
-		if err != nil {
-			log.Printf("failed to marshal article for cache: %v", err)
-			return
-		}
-		// Устанавливаем TTL 5 минут с небольшим случайным отклонением (jitter) для защиты от одновременного протухания многих ключей :cite[1]
-		ttl := 5*time.Minute + time.Duration(rand.Intn(30))*time.Second
-		if err := redisClient.Set(context.Background(), cacheKey, serialized, ttl).Err(); err != nil {
-			log.Printf("failed to set cache: %v", err)
-		}
-	}(article)
 
 	return c.Render(http.StatusOK, "article.html", article)
 }

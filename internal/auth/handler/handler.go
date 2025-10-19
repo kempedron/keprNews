@@ -9,10 +9,7 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
-	"github.com/redis/go-redis/v9"
 )
-
-var redisClient *redis.Client
 
 type AuthRequest struct {
 	Username string `form:"username" validate:"required, min=3"`
