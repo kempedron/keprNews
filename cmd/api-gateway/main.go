@@ -77,7 +77,6 @@ func (g *APIGateway) setRoutes() {
 	articlePages.GET("/search", g.proxyToArticleService)
 	articlePages.GET("/article/:article_id", g.proxyToArticleService)
 
-	// Public API routes
 	public := g.echo.Group("")
 	public.POST("/login", g.proxyToAuthService)
 	public.POST("/register", g.proxyToAuthService)
@@ -85,7 +84,6 @@ func (g *APIGateway) setRoutes() {
 	public.GET("/get-info/user-info", g.proxyToAuthService)
 	public.GET("/popular-news", g.proxyToArticleService)
 
-	// Protected API routes
 	protected := g.echo.Group("")
 	protected.Use(myMiddleware.JWTAuth)
 	protected.POST("/add-article", g.proxyToArticleService)
@@ -106,10 +104,10 @@ func (g *APIGateway) proxyToAuthService(c echo.Context) error {
 
 func (g *APIGateway) proxyToService(serviceName string) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		log.Printf("Проксирование запроса к сервису: %s", serviceName) // Добавьте это
+		log.Printf("Проксирование запроса к сервису: %s", serviceName)
 		service, exists := g.services[serviceName]
 		if !exists {
-			log.Printf("Сервис %s не найден", serviceName) // И это
+			log.Printf("Сервис %s не найден", serviceName)
 			return c.JSON(http.StatusInternalServerError, map[string]string{
 				"error": "Service unavailable",
 			})
@@ -157,7 +155,7 @@ func main() {
 func NewAPIGateway(cfg *Config) *APIGateway {
 	e := echo.New()
 
-	e.Use((echoprometheus.NewMiddleware("api_gateway"))) // Собирает метрики
+	e.Use((echoprometheus.NewMiddleware("api_gateway"))) 
 	e.GET("/metrics", echoprometheus.NewHandler())
 	e.GET("/health", func(c echo.Context) error {
 		return c.JSON(200, map[string]string{"status": "healthy"})
