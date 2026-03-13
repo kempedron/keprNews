@@ -1,15 +1,11 @@
 package database
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"news/pkg/models"
 	"os"
-	"time"
 
-	"github.com/joho/godotenv"
-	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -17,7 +13,7 @@ import (
 
 var DB *gorm.DB
 
-var redisClient *redis.Client
+//var redisClient *redis.Client
 
 func InitDB() error {
 	var err error
@@ -52,7 +48,7 @@ func InitDB() error {
 
 func createIndexForDB() error {
 	indexes := []string{
-		`ALTER TABLE articles 
+		`ALTER TABLE articles
         ADD COLUMN IF NOT EXISTS search_vector tsvector GENERATED ALWAYS AS (
             setweight(to_tsvector('russian', coalesce(article_title, '')), 'A') ||
             setweight(to_tsvector('russian', coalesce(article_content, '')), 'B')
@@ -70,25 +66,25 @@ func createIndexForDB() error {
 	return nil
 }
 
-func InitRedis() error {
-	if err := godotenv.Load("/root/.env"); err != nil {
-		log.Println("No .env file found, using system environment variables")
-	}
-	redisURL := os.Getenv("REDIS_URL")
-	log.Println(redisURL)
+// func InitRedis() error {
+// 	if err := godotenv.Load("/root/.env"); err != nil {
+// 		log.Println("No .env file found, using system environment variables")
+// 	}
+// 	redisURL := os.Getenv("REDIS_URL")
+// 	log.Println(redisURL)
 
-	redisClient = redis.NewClient(&redis.Options{
-		Addr:     redisURL,
-		Password: "",
-		DB:       0,
-	})
+// 	redisClient = redis.NewClient(&redis.Options{
+// 		Addr:     redisURL,
+// 		Password: "",
+// 		DB:       0,
+// 	})
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	if err := redisClient.Ping(ctx).Err(); err != nil {
-		log.Fatalf("Failed to connect to Redis: %v", err)
-		return err
-	}
-	log.Println("Successfully connected to Redis")
-	return nil
-}
+// 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+// 	defer cancel()
+// 	if err := redisClient.Ping(ctx).Err(); err != nil {
+// 		log.Fatalf("Failed to connect to Redis: %v", err)
+// 		return err
+// 	}
+// 	log.Println("Successfully connected to Redis")
+// 	return nil
+// }

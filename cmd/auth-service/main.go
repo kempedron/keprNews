@@ -26,12 +26,7 @@ func (t *TemplateRegistry) Render(w io.Writer, name string, data interface{}, c 
 }
 
 func main() {
-	err := database.InitRedis()
-	if err != nil {
-		log.Printf("error init redis: %s", err)
-		log.Fatal(err)
-	}
-	err = database.InitDB()
+	err := database.InitDB()
 	if err != nil {
 		log.Printf("error init database: %s", err)
 		log.Fatal(err)

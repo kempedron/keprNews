@@ -1,13 +1,13 @@
 services:
   auth-service:
-    build: 
+    build:
       context: .
-      dockerfile: ./cmd/auth-service/Dockerfile  
-    env_file: 
+      dockerfile: ./cmd/auth-service/Dockerfile
+    env_file:
       - .env
     ports:
-      - "8081:8080"  # Основное приложение
-      - "9081:8081"  # Метрики Prometheus
+      - "8081:8080" # Основное приложение
+      - "9081:8081" # Метрики Prometheus
     depends_on:
       db:
         condition: service_healthy
@@ -23,22 +23,21 @@ services:
       retries: 3
       start_period: 20s
 
-
   # Сервис статей
   article-service:
-    build: 
+    build:
       context: .
-      dockerfile: ./cmd/article-service/Dockerfile  
-    env_file: 
+      dockerfile: ./cmd/article-service/Dockerfile
+    env_file:
       - .env
     ports:
-      - "8082:8080"  
-      - "9082:8081"  
+      - "8082:8080"
+      - "9082:8081"
     depends_on:
       db:
         condition: service_healthy
-      redis:
-        condition: service_healthy
+      # redis:
+      #   condition: service_healthy
     restart: always
     networks:
       - news-network
@@ -49,17 +48,16 @@ services:
       retries: 3
       start_period: 20s
 
-
   # API Gateway
   api-gateway:
     build:
       context: .
       dockerfile: ./cmd/api-gateway/Dockerfile
-    env_file: 
+    env_file:
       - .env
     ports:
-      - "8080:8080"  
-      - "9080:8081"  
+      - "8080:8080"
+      - "9080:8081"
     depends_on:
       auth-service:
         condition: service_healthy
@@ -75,15 +73,14 @@ services:
       retries: 3
       start_period: 20s
 
-
   db:
     image: postgres:14-alpine
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./init-scripts:/docker-entrypoint-initdb.d  
+      #- ./init-scripts:/docker-entrypoint-initdb.d
     environment:
-      POSTGRES_PASSWORD: 123456  
-      POSTGRES_DB: auth_db  
+      POSTGRES_PASSWORD: 123456
+      POSTGRES_DB: auth_db
       POSTGRES_USER: dbUser
     restart: always
     networks:
@@ -119,11 +116,11 @@ services:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
     command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
-      - '--storage.tsdb.retention.time=200h'
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/etc/prometheus/console_libraries"
+      - "--web.console.templates=/etc/prometheus/consoles"
+      - "--storage.tsdb.retention.time=200h"
     networks:
       - news-network
     depends_on:
